@@ -25,9 +25,9 @@ export default function Layout() {
   };
 
   return (
-    <div className="flex min-h-screen bg-background text-on-surface font-body selection:bg-primary-fixed selection:text-on-primary-fixed">
+    <div className="flex min-h-screen w-full max-w-full overflow-x-hidden bg-background text-on-surface font-body selection:bg-primary-fixed selection:text-on-primary-fixed">
       {/* Sidebar */}
-      <aside className="w-[280px] h-screen sticky top-0 left-0 bg-slate-50 flex flex-col py-8 px-4 font-headline text-sm tracking-wide border-r border-slate-100">
+      <aside className="hidden md:flex w-[280px] shrink-0 h-screen sticky top-0 left-0 bg-slate-50 flex-col py-8 px-4 font-headline text-sm tracking-wide border-r border-slate-100">
         <div className="mb-10 px-4">
           <span className="text-xl font-bold text-indigo-600">信息分类</span>
           <p className="text-xs text-slate-400 mt-1">个人知识库</p>
@@ -63,14 +63,14 @@ export default function Layout() {
       </aside>
 
       {/* Main Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 w-full max-w-full pb-16 md:pb-0">
         {/* Top Navbar */}
-        <header className="w-full h-16 sticky top-0 z-40 bg-white/80 backdrop-blur-md flex justify-between items-center px-8 border-b border-slate-100/50 shadow-sm">
-          <div className="flex items-center gap-4 flex-1">
-            <div className="relative w-full max-w-md">
+        <header className="w-full max-w-full h-16 sticky top-0 z-40 bg-white/80 backdrop-blur-md flex justify-between items-center px-4 md:px-8 border-b border-slate-100/50 shadow-sm min-w-0">
+          <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0 mr-2 md:mr-4">
+            <div className="relative w-full max-w-md min-w-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input 
-                className="w-full bg-surface-container-low border-none rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none" 
+                className="w-full bg-surface-container-low border-none rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none min-w-0" 
                 placeholder="搜索知识点..." 
                 type="text" 
                 value={searchQuery}
@@ -78,7 +78,7 @@ export default function Layout() {
               />
             </div>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 md:gap-6 shrink-0">
             <button className="text-slate-400 hover:text-indigo-500 transition-opacity opacity-80 hover:opacity-100">
               <Bell size={20} />
             </button>
@@ -97,13 +97,37 @@ export default function Layout() {
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 flex overflow-hidden">
+        <main className="flex-1 flex overflow-hidden min-w-0 w-full max-w-full">
           <Outlet />
         </main>
       </div>
 
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 flex justify-around items-center h-16 px-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+        <NavLink to="/page1" className={({isActive}) => `flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive ? 'text-indigo-600' : 'text-slate-400 hover:text-indigo-500'}`}>
+          <LayoutDashboard size={20} />
+          <span className="text-[10px] font-medium">工作台</span>
+        </NavLink>
+        <NavLink to="/page2" className={({isActive}) => `flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive ? 'text-indigo-600' : 'text-slate-400 hover:text-indigo-500'}`}>
+          <Library size={20} />
+          <span className="text-[10px] font-medium">知识库</span>
+        </NavLink>
+        <NavLink to="/page3" className={({isActive}) => `flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive ? 'text-indigo-600' : 'text-slate-400 hover:text-indigo-500'}`}>
+          <PlusCircle size={20} />
+          <span className="text-[10px] font-medium">新建</span>
+        </NavLink>
+        <NavLink to="/page4" className={({isActive}) => `flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive ? 'text-indigo-600' : 'text-slate-400 hover:text-indigo-500'}`}>
+          <BookOpen size={20} />
+          <span className="text-[10px] font-medium">复习</span>
+        </NavLink>
+        <NavLink to="/page5" className={({isActive}) => `flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive ? 'text-indigo-600' : 'text-slate-400 hover:text-indigo-500'}`}>
+          <Settings size={20} />
+          <span className="text-[10px] font-medium">设置</span>
+        </NavLink>
+      </nav>
+
       {/* Floating Action Button */}
-      <button className="fixed bottom-10 right-10 w-14 h-14 bg-primary text-on-primary rounded-full shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all">
+      <button className="fixed bottom-20 right-4 md:bottom-10 md:right-10 z-50 w-14 h-14 bg-primary text-on-primary rounded-full shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all">
         <MessageCircle size={24} fill="currentColor" />
       </button>
     </div>
