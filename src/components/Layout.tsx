@@ -29,7 +29,7 @@ export default function Layout() {
       {/* Sidebar */}
       <aside className="w-[280px] h-screen sticky top-0 left-0 bg-slate-50 flex flex-col py-8 px-4 font-headline text-sm tracking-wide border-r border-slate-100">
         <div className="mb-10 px-4">
-          <span className="text-xl font-bold text-indigo-600">数字工坊</span>
+          <span className="text-xl font-bold text-indigo-600">信息分类</span>
           <p className="text-xs text-slate-400 mt-1">个人知识库</p>
         </div>
         <nav className="flex-1 space-y-2">
