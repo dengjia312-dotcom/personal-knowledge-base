@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Sparkles, Bot, PenLine, Bold, Link as LinkIcon, Paperclip, Clock, CheckCircle2, Link2 } from 'lucide-react';
+import { Sparkles, Bot, PenLine, Bold, Link as LinkIcon, Paperclip, Clock, CheckCircle2, Link2, Loader2 } from 'lucide-react';
 import { useAppContext, Document } from '../context/AppContext';
 
 export default function Page1() {
@@ -9,6 +9,7 @@ export default function Page1() {
   const { documents, updateDocument, showToast } = useAppContext();
   const navigate = useNavigate();
   const [doc, setDoc] = useState<Document | null>(null);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
 
   useEffect(() => {
     if (docId) {
@@ -31,6 +32,43 @@ export default function Page1() {
     }
   };
 
+  const handleGenerateSummary = async () => {
+    if (!doc) return;
+    
+    if (!doc.content.trim()) {
+      showToast('请先输入正文内容');
+      return;
+    }
+
+    setIsGeneratingSummary(true);
+    try {
+      const response = await fetch('/api/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: doc.content })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || '生成摘要失败');
+      }
+
+      // Update local state
+      const updatedDoc = { ...doc, summary: data.summaries };
+      setDoc(updatedDoc);
+      
+      // Update global state
+      updateDocument(doc.id, { summary: data.summaries });
+      
+      showToast('AI 摘要生成成功');
+    } catch (error: any) {
+      showToast(error.message || '生成摘要时发生错误');
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
+
   if (!doc) {
     return <div className="p-10 text-center text-outline">加载中...</div>;
   }
@@ -47,6 +85,14 @@ export default function Page1() {
           <div className="flex items-center gap-2 md:gap-3 mb-4 flex-wrap">
             <span className="px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-xs font-medium whitespace-nowrap">深度阅读</span>
             <span className="text-xs md:text-sm text-outline">预计阅读时间: {Math.max(1, Math.ceil(doc.content.length / 300))}分钟</span>
+            <button 
+              onClick={handleGenerateSummary}
+              disabled={isGeneratingSummary}
+              className="flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium hover:bg-primary/20 transition-colors disabled:opacity-50 ml-auto md:ml-0"
+            >
+              {isGeneratingSummary ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+              {isGeneratingSummary ? '生成中...' : 'AI 摘要'}
+            </button>
           </div>
           <h1 className="text-2xl md:text-4xl font-headline font-extrabold text-on-surface tracking-tight leading-tight break-words">
             {doc.title}
@@ -64,7 +110,7 @@ export default function Page1() {
         </div>
 
         {/* AI Highlights Card */}
-        {doc.summary && doc.summary.length > 0 && (
+        {(doc.summary && doc.summary.length > 0 && doc.summary[0] !== 'AI 摘要将在稍后生成...' || isGeneratingSummary) && (
           <section className="mb-8 md:mb-12 p-4 md:p-8 rounded-xl bg-gradient-to-br from-primary/5 to-primary-container/10 border border-primary/5 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
               <Sparkles size={80} className="text-primary" />
@@ -73,14 +119,21 @@ export default function Page1() {
               <Bot size={20} />
               <span className="text-sm tracking-wider">AI 智能摘要</span>
             </div>
-            <ul className="space-y-4 text-on-surface-variant leading-relaxed">
-              {doc.summary.map((point, index) => (
-                <li key={index} className="flex gap-3">
-                  <span className="text-primary font-bold">{String(index + 1).padStart(2, '0')}</span>
-                  <span>{point}</span>
-                </li>
-              ))}
-            </ul>
+            {isGeneratingSummary ? (
+              <div className="flex items-center gap-2 text-on-surface-variant">
+                <Loader2 size={16} className="animate-spin" />
+                <span>正在分析正文内容，请稍候...</span>
+              </div>
+            ) : (
+              <ul className="space-y-4 text-on-surface-variant leading-relaxed">
+                {doc.summary.map((point, index) => (
+                  <li key={index} className="flex gap-3">
+                    <span className="text-primary font-bold">{String(index + 1).padStart(2, '0')}</span>
+                    <span>{point}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
         )}
 
