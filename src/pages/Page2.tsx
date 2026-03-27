@@ -17,7 +17,7 @@ export default function Page2() {
 
   const filteredDocs = documents
     .filter(doc => {
-      const matchesSearch = doc.title.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = doc.title.toLowerCase().includes(normalizedSearchQuery.toLowerCase());
       const matchesFolder = selectedFolder ? doc.category === selectedFolder : true;
       const matchesStatus = filterStatus === 'all' ? true : doc.reviewStatus === filterStatus;
       return matchesSearch && matchesFolder && matchesStatus;
