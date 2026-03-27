@@ -17,7 +17,7 @@ export default function Page2() {
 
   const filteredDocs = documents
     .filter(doc => {
-      const matchesSearch = doc.title.toLowerCase().includes(normalizedSearchQuery.toLowerCase());
+      const matchesSearch = doc.title.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesFolder = selectedFolder ? doc.category === selectedFolder : true;
       const matchesStatus = filterStatus === 'all' ? true : doc.reviewStatus === filterStatus;
       return matchesSearch && matchesFolder && matchesStatus;
@@ -34,11 +34,7 @@ export default function Page2() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-headline font-bold text-on-surface">知识库</h1>
-<<<<<<< HEAD
           {normalizedSearchQuery && (
-=======
-          {searchQuery && (
->>>>>>> main
             <p className="text-sm text-on-surface-variant mt-1">当前结果来自全局搜索，可结合筛选与排序快速归档。</p>
           )}
         </div>
