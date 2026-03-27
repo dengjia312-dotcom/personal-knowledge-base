@@ -10,6 +10,7 @@ export default function Page1() {
   const navigate = useNavigate();
   const [doc, setDoc] = useState<Document | null>(null);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [showFullArticle, setShowFullArticle] = useState(false);
 
   useEffect(() => {
     if (docId) {
@@ -128,7 +129,11 @@ export default function Page1() {
           </div>
         </section>
 
+<<<<<<< HEAD
+        {/* Continue Reading Module */}
+=======
         {/* Title & Header Info */}
+>>>>>>> main
         <div className="mb-6 md:mb-10">
           <div className="flex items-center gap-2 md:gap-3 mb-4 flex-wrap">
             <span className="px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-xs font-medium whitespace-nowrap">继续阅读</span>
@@ -145,6 +150,18 @@ export default function Page1() {
           <h1 className="text-2xl md:text-4xl font-headline font-extrabold text-on-surface tracking-tight leading-tight break-words">
             {doc.title}
           </h1>
+          <p className="text-sm md:text-base text-on-surface-variant mt-3">
+            {doc.content.slice(0, 140)}{doc.content.length > 140 ? '...' : ''}
+          </p>
+          <div className="mt-4">
+            <p className="text-xs text-outline mb-2">正文默认折叠，按需展开深入阅读</p>
+            <button
+              onClick={() => setShowFullArticle((prev) => !prev)}
+              className="px-4 py-2 bg-surface-container text-on-surface rounded-full text-sm font-medium hover:bg-surface-container-high transition-colors"
+            >
+              {showFullArticle ? '收起正文' : '展开正文阅读'}
+            </button>
+          </div>
         </div>
 
         {/* Cover Image */}
@@ -186,9 +203,15 @@ export default function Page1() {
         )}
 
         {/* Article Content */}
-        <article className="text-base md:text-lg text-on-surface-variant leading-relaxed space-y-6 whitespace-pre-wrap break-words">
-          {doc.content}
-        </article>
+        {showFullArticle ? (
+          <article className="text-base md:text-lg text-on-surface-variant leading-relaxed space-y-6 whitespace-pre-wrap break-words">
+            {doc.content}
+          </article>
+        ) : (
+          <div className="rounded-xl border border-outline-variant/20 bg-surface-container-low p-4 md:p-5 text-sm text-on-surface-variant">
+            正文已折叠。你可以先看工作台概览与摘要，再按需展开深入阅读。
+          </div>
+        )}
 
         {/* My Notes Editor */}
         <section className="mt-10 md:mt-16 pt-8 md:pt-10 border-t border-surface-container-high w-full max-w-full min-w-0">

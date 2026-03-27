@@ -131,6 +131,8 @@ export default function Layout() {
           <span className="text-[10px] font-medium">设置</span>
         </NavLink>
       </nav>
+<<<<<<< HEAD
+=======
 
       {/* Floating Action Button */}
       <button
@@ -140,6 +142,7 @@ export default function Layout() {
       >
         <PlusCircle size={24} />
       </button>
+>>>>>>> main
     </div>
   );
 }
