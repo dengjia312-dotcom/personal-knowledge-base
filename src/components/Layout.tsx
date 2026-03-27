@@ -9,7 +9,6 @@ import {
   HelpCircle,
   Search,
   Bell,
-  MessageCircle
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 
@@ -79,6 +78,13 @@ export default function Layout() {
             </div>
           </div>
           <div className="flex items-center gap-3 md:gap-6 shrink-0">
+            <button
+              onClick={() => navigate('/page3')}
+              className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-on-primary text-sm font-medium hover:opacity-90 transition-opacity"
+            >
+              <PlusCircle size={16} />
+              <span>新建</span>
+            </button>
             <button className="text-slate-400 hover:text-indigo-500 transition-opacity opacity-80 hover:opacity-100">
               <Bell size={20} />
             </button>
@@ -125,11 +131,6 @@ export default function Layout() {
           <span className="text-[10px] font-medium">设置</span>
         </NavLink>
       </nav>
-
-      {/* Floating Action Button */}
-      <button className="fixed bottom-20 right-4 md:bottom-10 md:right-10 z-50 w-14 h-14 bg-primary text-on-primary rounded-full shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all">
-        <MessageCircle size={24} fill="currentColor" />
-      </button>
     </div>
   );
 }

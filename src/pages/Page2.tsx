@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Folder, FileText, MoreVertical, Filter, ArrowUpDown } from 'lucide-react';
+import { Folder, FileText, MoreVertical, Filter, ArrowUpDown, Search } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 
 export default function Page2() {
   const { documents, searchQuery } = useAppContext();
   const navigate = useNavigate();
+  const normalizedSearchQuery = searchQuery.trim();
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [showSortMenu, setShowSortMenu] = useState(false);
@@ -31,7 +32,12 @@ export default function Page2() {
   return (
     <div className="flex-1 overflow-y-auto px-10 py-10 max-w-6xl mx-auto w-full scrollbar-hide">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-headline font-bold text-on-surface">知识库</h1>
+        <div>
+          <h1 className="text-3xl font-headline font-bold text-on-surface">知识库</h1>
+          {normalizedSearchQuery && (
+            <p className="text-sm text-on-surface-variant mt-1">当前结果来自全局搜索，可结合筛选与排序快速归档。</p>
+          )}
+        </div>
         <div className="flex items-center gap-4">
           <div className="relative">
             <button 
@@ -87,6 +93,13 @@ export default function Page2() {
         </div>
       </div>
 
+      {normalizedSearchQuery && (
+        <div className="mb-6 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 flex items-center gap-2 text-sm text-on-surface-variant">
+          <Search size={16} className="text-primary shrink-0" />
+          <span>当前结果来自搜索：<span className="font-medium text-on-surface">“{normalizedSearchQuery}”</span></span>
+        </div>
+      )}
+
       {/* Folders */}
       <div className="mb-12">
         <div className="flex items-center justify-between mb-4">
@@ -127,7 +140,7 @@ export default function Page2() {
       {/* Recent Documents */}
       <div>
         <h2 className="text-lg font-bold text-on-surface mb-4">
-          {searchQuery ? `搜索结果: "${searchQuery}"` : selectedFolder ? `${selectedFolder} 下的文档` : '所有文档'}
+          {normalizedSearchQuery ? `搜索结果: "${normalizedSearchQuery}"` : selectedFolder ? `${selectedFolder} 下的文档` : '所有文档'}
         </h2>
         {filteredDocs.length > 0 ? (
           <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-xl overflow-hidden">
