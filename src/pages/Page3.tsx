@@ -52,26 +52,31 @@ export default function Page3() {
   };
 
   const handleSave = () => {
-    if (!title.trim()) {
+    const normalizedTitle = title.trim();
+    const normalizedContent = content.trim();
+    const normalizedCategory = category.trim();
+    const contentLength = normalizedContent.length;
+
+    if (!normalizedTitle) {
       showToast('请输入标题');
       return;
     }
 
-    if (content.trim().length < MIN_CONTENT_LENGTH) {
-      showToast(`正文至少需要 ${MIN_CONTENT_LENGTH} 个字`);
+    if (contentLength < MIN_CONTENT_LENGTH) {
+      showToast(`正文至少需要 ${MIN_CONTENT_LENGTH} 个字（当前 ${contentLength}）`);
       return;
     }
 
-    if (!category.trim()) {
+    if (!normalizedCategory) {
       showToast('请输入分类');
       return;
     }
 
     const newDoc = {
       id: Date.now().toString(),
-      title: title.trim(),
-      content: content.trim(),
-      category: category.trim(),
+      title: normalizedTitle,
+      content: normalizedContent,
+      category: normalizedCategory,
       tags: tags.split(',').map(t => t.trim()).filter(Boolean),
       summary: summary.length > 0 ? summary : ['AI 摘要将在稍后生成...'],
       createdAt: new Date().toISOString().split('T')[0],
@@ -114,7 +119,8 @@ export default function Page3() {
           <span className="text-xs text-outline">已保存</span>
           <button 
             onClick={handleSave}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+            disabled={!title.trim() || !category.trim() || content.trim().length < MIN_CONTENT_LENGTH}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Save size={16} />
             发布
@@ -132,30 +138,41 @@ export default function Page3() {
           className="w-full text-4xl font-headline font-bold text-on-surface placeholder:text-outline-variant/50 border-none focus:ring-0 p-0 mb-6 bg-transparent outline-none"
         />
         
-        <div className="flex items-center gap-2 mb-10">
-          <input
-            type="text"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            placeholder="输入分类（例如：技术 / 阅读）"
-            list="category-options"
-            className="px-3 py-1 bg-surface-container-high rounded-full text-xs font-medium text-on-surface-variant focus:ring-2 focus:ring-primary/20 outline-none border-none w-56"
-          />
-          <datalist id="category-options">
-            {categoryOptions.map((item) => (
-              <option key={item} value={item} />
-            ))}
-          </datalist>
-          <input 
-            type="text"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-            placeholder="输入标签 (逗号分隔)"
-            className="px-3 py-1 bg-surface-container-high rounded-full text-xs font-medium text-on-surface-variant focus:ring-2 focus:ring-primary/20 outline-none border-none w-64"
-          />
-          <span className="px-3 py-1 bg-surface-container-high rounded-full text-xs font-medium text-on-surface-variant cursor-pointer hover:bg-surface-variant transition-colors">
-            + 添加封面
-          </span>
+        <div className="mb-10 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-on-surface-variant mb-2">分类</label>
+            <input
+              type="text"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="请输入或选择分类（例如：技术 / 阅读）"
+              list="category-options"
+              className="w-full max-w-sm px-3 py-2 bg-surface-container-high rounded-xl text-sm text-on-surface-variant focus:ring-2 focus:ring-primary/20 outline-none border-none"
+            />
+            <p className="text-xs text-outline mt-1">可直接输入，也可使用已有分类建议</p>
+            <datalist id="category-options">
+              {categoryOptions.map((item) => (
+                <option key={item} value={item} />
+              ))}
+            </datalist>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <label className="text-sm font-medium text-on-surface-variant">标签</label>
+            <input 
+              type="text"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              placeholder="输入标签 (逗号分隔)"
+              className="px-3 py-1 bg-surface-container-high rounded-full text-xs font-medium text-on-surface-variant focus:ring-2 focus:ring-primary/20 outline-none border-none w-64"
+            />
+          </div>
+
+          <div>
+            <span className="px-3 py-1 bg-surface-container-high rounded-full text-xs font-medium text-on-surface-variant cursor-pointer hover:bg-surface-variant transition-colors">
+              + 添加封面
+            </span>
+          </div>
         </div>
 
         {/* AI Highlights Card */}
