@@ -34,7 +34,11 @@ export default function Page2() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-headline font-bold text-on-surface">知识库</h1>
+<<<<<<< HEAD
           {normalizedSearchQuery && (
+=======
+          {searchQuery && (
+>>>>>>> main
             <p className="text-sm text-on-surface-variant mt-1">当前结果来自全局搜索，可结合筛选与排序快速归档。</p>
           )}
         </div>

@@ -131,6 +131,18 @@ export default function Layout() {
           <span className="text-[10px] font-medium">设置</span>
         </NavLink>
       </nav>
+<<<<<<< HEAD
+=======
+
+      {/* Floating Action Button */}
+      <button
+        onClick={() => navigate('/page3')}
+        className="fixed bottom-20 right-4 md:bottom-10 md:right-10 z-50 w-14 h-14 bg-primary text-on-primary rounded-full shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
+        aria-label="新建知识"
+      >
+        <PlusCircle size={24} />
+      </button>
+>>>>>>> main
     </div>
   );
 }

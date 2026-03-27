@@ -129,7 +129,11 @@ export default function Page1() {
           </div>
         </section>
 
+<<<<<<< HEAD
         {/* Continue Reading Module */}
+=======
+        {/* Title & Header Info */}
+>>>>>>> main
         <div className="mb-6 md:mb-10">
           <div className="flex items-center gap-2 md:gap-3 mb-4 flex-wrap">
             <span className="px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-xs font-medium whitespace-nowrap">继续阅读</span>
