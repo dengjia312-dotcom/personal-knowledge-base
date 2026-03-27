@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Sparkles, Bot, PenLine, Bold, Link as LinkIcon, Paperclip, Clock, CheckCircle2, Link2, Loader2 } from 'lucide-react';
+import { Sparkles, Bot, PenLine, Bold, Link as LinkIcon, Paperclip, Clock, CheckCircle2, Link2, Loader2, PlusCircle, BrainCircuit } from 'lucide-react';
 import { useAppContext, Document } from '../context/AppContext';
 
 export default function Page1() {
@@ -75,15 +75,63 @@ export default function Page1() {
 
   // Simple related docs logic (just picking some others)
   const relatedDocs = documents.filter(d => d.id !== doc.id).slice(0, 2);
+  const pendingReviewCount = documents.filter((d) => d.reviewStatus !== 'mastered').length;
+  const masteredCount = documents.filter((d) => d.reviewStatus === 'mastered').length;
+  const recentAddedCount = documents.filter((d) => {
+    const createdTime = new Date(d.createdAt).getTime();
+    if (Number.isNaN(createdTime)) return false;
+    const diffDays = (Date.now() - createdTime) / (1000 * 60 * 60 * 24);
+    return diffDays <= 7;
+  }).length;
 
   return (
     <div className="flex flex-col xl:flex-row w-full h-full overflow-y-auto xl:overflow-hidden min-w-0 max-w-full">
       {/* Reading Canvas */}
       <div className="flex-1 overflow-y-visible xl:overflow-y-auto px-4 md:px-10 py-6 md:py-10 w-full max-w-4xl mx-auto scrollbar-hide min-w-0">
+        {/* Workspace Overview */}
+        <section className="mb-8 md:mb-10 p-4 md:p-6 rounded-2xl border border-outline-variant/20 bg-surface-container-lowest shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
+            <div>
+              <h2 className="text-xl md:text-2xl font-headline font-bold text-on-surface">知识工作台</h2>
+              <p className="text-sm text-on-surface-variant mt-1">聚焦输入、归档与回顾，让学习闭环每天都可推进。</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate('/page3')}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-full text-sm font-medium hover:opacity-90 transition-opacity"
+              >
+                <PlusCircle size={16} />
+                去新建
+              </button>
+              <button
+                onClick={() => navigate('/page4')}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-surface-container text-on-surface rounded-full text-sm font-medium hover:bg-surface-container-high transition-colors"
+              >
+                <BrainCircuit size={16} />
+                开始复习
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+            <div className="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10">
+              <p className="text-xs text-outline mb-1">今日待复习数</p>
+              <p className="text-2xl font-bold text-on-surface">{pendingReviewCount}</p>
+            </div>
+            <div className="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10">
+              <p className="text-xs text-outline mb-1">最近新增数（7天）</p>
+              <p className="text-2xl font-bold text-on-surface">{recentAddedCount}</p>
+            </div>
+            <div className="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10">
+              <p className="text-xs text-outline mb-1">已掌握数</p>
+              <p className="text-2xl font-bold text-on-surface">{masteredCount}</p>
+            </div>
+          </div>
+        </section>
+
         {/* Title & Header Info */}
         <div className="mb-6 md:mb-10">
           <div className="flex items-center gap-2 md:gap-3 mb-4 flex-wrap">
-            <span className="px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-xs font-medium whitespace-nowrap">深度阅读</span>
+            <span className="px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-xs font-medium whitespace-nowrap">继续阅读</span>
             <span className="text-xs md:text-sm text-outline">预计阅读时间: {Math.max(1, Math.ceil(doc.content.length / 300))}分钟</span>
             <button 
               onClick={handleGenerateSummary}

@@ -31,7 +31,12 @@ export default function Page2() {
   return (
     <div className="flex-1 overflow-y-auto px-10 py-10 max-w-6xl mx-auto w-full scrollbar-hide">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-headline font-bold text-on-surface">知识库</h1>
+        <div>
+          <h1 className="text-3xl font-headline font-bold text-on-surface">知识库</h1>
+          {searchQuery && (
+            <p className="text-sm text-on-surface-variant mt-1">当前结果来自全局搜索，可结合筛选与排序快速归档。</p>
+          )}
+        </div>
         <div className="flex items-center gap-4">
           <div className="relative">
             <button 
