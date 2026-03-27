@@ -9,6 +9,8 @@ export interface Document {
   tags: string[];
   createdAt: string;
   reviewStatus: 'learning' | 'mastered';
+  lastReviewAt?: string;
+  lastReviewResult?: 'again' | 'hard' | 'good';
   imageUrl?: string;
 }
 

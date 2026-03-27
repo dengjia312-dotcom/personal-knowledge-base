@@ -4,13 +4,23 @@ import { Save, Image as ImageIcon, List, Type, Hash, Sparkles, Bot, Loader2 } fr
 import { useAppContext } from '../context/AppContext';
 
 export default function Page3() {
-  const { addDocument, showToast } = useAppContext();
+  const { documents, addDocument, showToast } = useAppContext();
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [category, setCategory] = useState('');
   const [tags, setTags] = useState('');
   const [summary, setSummary] = useState<string[]>([]);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const MIN_CONTENT_LENGTH = 30;
+
+  const categoryOptions = Array.from(
+    new Set(
+      documents
+        .map((doc) => doc.category?.trim())
+        .filter((item): item is string => Boolean(item))
+    )
+  );
 
   const handleGenerateSummary = async () => {
     if (!content.trim()) {
@@ -47,11 +57,21 @@ export default function Page3() {
       return;
     }
 
+    if (content.trim().length < MIN_CONTENT_LENGTH) {
+      showToast(`正文至少需要 ${MIN_CONTENT_LENGTH} 个字`);
+      return;
+    }
+
+    if (!category.trim()) {
+      showToast('请输入分类');
+      return;
+    }
+
     const newDoc = {
       id: Date.now().toString(),
-      title,
-      content,
-      category: '默认分类', // Default category for now
+      title: title.trim(),
+      content: content.trim(),
+      category: category.trim(),
       tags: tags.split(',').map(t => t.trim()).filter(Boolean),
       summary: summary.length > 0 ? summary : ['AI 摘要将在稍后生成...'],
       createdAt: new Date().toISOString().split('T')[0],
@@ -113,6 +133,19 @@ export default function Page3() {
         />
         
         <div className="flex items-center gap-2 mb-10">
+          <input
+            type="text"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            placeholder="输入分类（例如：技术 / 阅读）"
+            list="category-options"
+            className="px-3 py-1 bg-surface-container-high rounded-full text-xs font-medium text-on-surface-variant focus:ring-2 focus:ring-primary/20 outline-none border-none w-56"
+          />
+          <datalist id="category-options">
+            {categoryOptions.map((item) => (
+              <option key={item} value={item} />
+            ))}
+          </datalist>
           <input 
             type="text"
             value={tags}
