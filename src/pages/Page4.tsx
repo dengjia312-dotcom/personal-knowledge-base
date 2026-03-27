@@ -9,28 +9,47 @@ export default function Page4() {
   const [flipped, setFlipped] = useState(false);
   const [reviewDocs, setReviewDocs] = useState<Document[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    // Filter and shuffle documents that need review
-    const docsToReview = documents.filter(doc => doc.reviewStatus !== 'mastered');
-    // Simple Fisher-Yates shuffle
+    if (initialized || documents.length === 0) return;
+    const docsToReview = documents.filter((doc) => doc.reviewStatus !== 'mastered');
     for (let i = docsToReview.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [docsToReview[i], docsToReview[j]] = [docsToReview[j], docsToReview[i]];
     }
     setReviewDocs(docsToReview);
-  }, [documents]);
+    setInitialized(true);
+  }, [documents, initialized]);
 
-  const handleNext = (status: 'mastered' | 'review') => {
-    if (reviewDocs.length > 0 && currentIndex < reviewDocs.length) {
-      if (status === 'mastered') {
-        updateDocument(reviewDocs[currentIndex].id, { reviewStatus: 'mastered' });
-      }
-      setFlipped(false);
-      setTimeout(() => {
-        setCurrentIndex(prev => prev + 1);
-      }, 300); // Wait for flip animation
+  const handleNext = (result: 'again' | 'hard' | 'good') => {
+    if (!(reviewDocs.length > 0 && currentIndex < reviewDocs.length)) return;
+
+    const currentDoc = reviewDocs[currentIndex];
+    const now = new Date().toISOString();
+
+    if (result === 'good') {
+      updateDocument(currentDoc.id, {
+        reviewStatus: 'mastered',
+        lastReviewAt: now,
+        lastReviewResult: result
+      });
+    } else {
+      updateDocument(currentDoc.id, {
+        reviewStatus: 'learning',
+        lastReviewAt: now,
+        lastReviewResult: result
+      });
     }
+
+    if (result === 'again') {
+      setReviewDocs((prev) => [...prev, currentDoc]);
+    }
+
+    setFlipped(false);
+    setTimeout(() => {
+      setCurrentIndex((prev) => prev + 1);
+    }, 300);
   };
 
   const isComplete = currentIndex >= reviewDocs.length || reviewDocs.length === 0;
@@ -98,7 +117,7 @@ export default function Page4() {
             {/* Action Buttons */}
             <div className={`mt-12 flex items-center justify-center gap-6 transition-opacity duration-300 ${flipped ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
               <button 
-                onClick={(e) => { e.stopPropagation(); handleNext('review'); }}
+                onClick={(e) => { e.stopPropagation(); handleNext('again'); }}
                 className="flex flex-col items-center gap-2 group"
               >
                 <div className="w-14 h-14 rounded-full bg-error-container text-on-error-container flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
@@ -108,7 +127,7 @@ export default function Page4() {
               </button>
               
               <button 
-                onClick={(e) => { e.stopPropagation(); handleNext('review'); }}
+                onClick={(e) => { e.stopPropagation(); handleNext('hard'); }}
                 className="flex flex-col items-center gap-2 group"
               >
                 <div className="w-14 h-14 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
@@ -118,7 +137,7 @@ export default function Page4() {
               </button>
 
               <button 
-                onClick={(e) => { e.stopPropagation(); handleNext('mastered'); }}
+                onClick={(e) => { e.stopPropagation(); handleNext('good'); }}
                 className="flex flex-col items-center gap-2 group"
               >
                 <div className="w-14 h-14 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
