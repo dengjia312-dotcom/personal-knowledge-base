@@ -1,41 +1,65 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Sparkles, Bot, PenLine, Bold, Link as LinkIcon, Paperclip, Clock, CheckCircle2, Link2, Loader2, PlusCircle, BrainCircuit } from 'lucide-react';
+import { Sparkles, Bot, PenLine, Loader2, PlusCircle, BrainCircuit, ArrowRight, ChevronDown, ChevronUp, CheckCircle2, Clock, Link2, Info } from 'lucide-react';
 import { useAppContext, Document } from '../context/AppContext';
 
 export default function Page1() {
   const [searchParams] = useSearchParams();
   const docId = searchParams.get('id');
+  const autoOpenReading = searchParams.get('read') === '1';
   const { documents, updateDocument, showToast } = useAppContext();
   const navigate = useNavigate();
+
   const [doc, setDoc] = useState<Document | null>(null);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
-  const [showFullArticle, setShowFullArticle] = useState(false);
+  const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
+  const [insightValue, setInsightValue] = useState('');
+  const [saveState, setSaveState] = useState<'idle' | 'editing' | 'saved'>('idle');
 
   useEffect(() => {
     if (docId) {
-      const foundDoc = documents.find(d => d.id === docId);
-      if (foundDoc) {
-        setDoc(foundDoc);
-      } else {
-        // Handle not found, maybe redirect or show error
-        setDoc(documents[0]); // Fallback to first doc for demo
-      }
-    } else if (documents.length > 0) {
-      setDoc(documents[0]);
+      const foundDoc = documents.find((d) => d.id === docId);
+      setDoc(foundDoc || documents[0] || null);
+      return;
     }
+    setDoc(documents[0] || null);
   }, [docId, documents]);
 
-  const handleMarkMastered = () => {
-    if (doc) {
-      updateDocument(doc.id, { reviewStatus: 'mastered' });
-      showToast('已标记为已掌握');
+  useEffect(() => {
+    if (!doc) return;
+    const savedInsight = localStorage.getItem(`kb_insight_${doc.id}`) || '';
+    setInsightValue(savedInsight);
+    setSaveState('idle');
+  }, [doc]);
+
+  useEffect(() => {
+    if (autoOpenReading) {
+      setIsSummaryExpanded(true);
     }
-  };
+  }, [autoOpenReading]);
+
+  useEffect(() => {
+    if (!doc || saveState !== 'editing') return;
+    const timer = setTimeout(() => {
+      localStorage.setItem(`kb_insight_${doc.id}`, insightValue);
+      setSaveState('saved');
+    }, 700);
+
+    return () => clearTimeout(timer);
+  }, [doc, insightValue, saveState]);
+
+  const relatedDocs = useMemo(() => documents.filter((d) => d.id !== doc?.id).slice(0, 2), [documents, doc?.id]);
+  const pendingReviewCount = documents.filter((d) => d.reviewStatus !== 'mastered').length;
+  const masteredCount = documents.filter((d) => d.reviewStatus === 'mastered').length;
+  const recentAddedCount = documents.filter((d) => {
+    const createdTime = new Date(d.createdAt).getTime();
+    if (Number.isNaN(createdTime)) return false;
+    const diffDays = (Date.now() - createdTime) / (1000 * 60 * 60 * 24);
+    return diffDays <= 7;
+  }).length;
 
   const handleGenerateSummary = async () => {
     if (!doc) return;
-    
     if (!doc.content.trim()) {
       showToast('请先输入正文内容');
       return;
@@ -50,18 +74,14 @@ export default function Page1() {
       });
 
       const data = await response.json();
-      
       if (!response.ok) {
         throw new Error(data.error || '生成摘要失败');
       }
 
-      // Update local state
       const updatedDoc = { ...doc, summary: data.summaries };
       setDoc(updatedDoc);
-      
-      // Update global state
       updateDocument(doc.id, { summary: data.summaries });
-      
+      setIsSummaryExpanded(true);
       showToast('AI 摘要生成成功');
     } catch (error: any) {
       showToast(error.message || '生成摘要时发生错误');
@@ -74,248 +94,249 @@ export default function Page1() {
     return <div className="p-10 text-center text-outline">加载中...</div>;
   }
 
-  // Simple related docs logic (just picking some others)
-  const relatedDocs = documents.filter(d => d.id !== doc.id).slice(0, 2);
-  const pendingReviewCount = documents.filter((d) => d.reviewStatus !== 'mastered').length;
-  const masteredCount = documents.filter((d) => d.reviewStatus === 'mastered').length;
-  const recentAddedCount = documents.filter((d) => {
-    const createdTime = new Date(d.createdAt).getTime();
-    if (Number.isNaN(createdTime)) return false;
-    const diffDays = (Date.now() - createdTime) / (1000 * 60 * 60 * 24);
-    return diffDays <= 7;
-  }).length;
+  const hasSummary = (doc.summary && doc.summary.length > 0 && doc.summary[0] !== 'AI 摘要将在稍后生成...') || isGeneratingSummary;
+  const isReadingMode = autoOpenReading;
 
-  return (
-    <div className="flex flex-col xl:flex-row w-full h-full overflow-y-auto xl:overflow-hidden min-w-0 max-w-full">
-      {/* Reading Canvas */}
-      <div className="flex-1 overflow-y-visible xl:overflow-y-auto px-4 md:px-10 py-6 md:py-10 w-full max-w-4xl mx-auto scrollbar-hide min-w-0">
-        {/* Workspace Overview */}
-        <section className="mb-8 md:mb-10 p-4 md:p-6 rounded-2xl border border-outline-variant/20 bg-surface-container-lowest shadow-sm">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
-            <div>
-              <h2 className="text-xl md:text-2xl font-headline font-bold text-on-surface">知识工作台</h2>
-              <p className="text-sm text-on-surface-variant mt-1">聚焦输入、归档与回顾，让学习闭环每天都可推进。</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => navigate('/page3')}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-full text-sm font-medium hover:opacity-90 transition-opacity"
-              >
-                <PlusCircle size={16} />
-                去新建
-              </button>
-              <button
-                onClick={() => navigate('/page4')}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-surface-container text-on-surface rounded-full text-sm font-medium hover:bg-surface-container-high transition-colors"
-              >
-                <BrainCircuit size={16} />
-                开始复习
-              </button>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-            <div className="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10">
-              <p className="text-xs text-outline mb-1">今日待复习数</p>
-              <p className="text-2xl font-bold text-on-surface">{pendingReviewCount}</p>
-            </div>
-            <div className="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10">
-              <p className="text-xs text-outline mb-1">最近新增数（7天）</p>
-              <p className="text-2xl font-bold text-on-surface">{recentAddedCount}</p>
-            </div>
-            <div className="rounded-xl bg-surface-container-low p-4 border border-outline-variant/10">
-              <p className="text-xs text-outline mb-1">已掌握数</p>
-              <p className="text-2xl font-bold text-on-surface">{masteredCount}</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Continue Reading Module */}
-        <div className="mb-6 md:mb-10">
-          <div className="flex items-center gap-2 md:gap-3 mb-4 flex-wrap">
-            <span className="px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-xs font-medium whitespace-nowrap">继续阅读</span>
-            <span className="text-xs md:text-sm text-outline">预计阅读时间: {Math.max(1, Math.ceil(doc.content.length / 300))}分钟</span>
-            <button 
-              onClick={handleGenerateSummary}
-              disabled={isGeneratingSummary}
-              className="flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium hover:bg-primary/20 transition-colors disabled:opacity-50 ml-auto md:ml-0"
-            >
-              {isGeneratingSummary ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-              {isGeneratingSummary ? '生成中...' : 'AI 摘要'}
-            </button>
-          </div>
-          <h1 className="text-2xl md:text-4xl font-headline font-extrabold text-on-surface tracking-tight leading-tight break-words">
-            {doc.title}
-          </h1>
-          <p className="text-sm md:text-base text-on-surface-variant mt-3">
-            {doc.content.slice(0, 140)}{doc.content.length > 140 ? '...' : ''}
-          </p>
-          <div className="mt-4">
-            <p className="text-xs text-outline mb-2">正文默认折叠，按需展开深入阅读</p>
+  if (isReadingMode) {
+    return (
+      <div className="flex-1 overflow-y-auto px-4 md:px-10 py-6 md:py-10 max-w-4xl mx-auto w-full scrollbar-hide">
+        <section className="mb-6 rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-4 md:p-6">
+          <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+            <h2 className="text-lg md:text-xl font-bold text-on-surface">文章详情阅读</h2>
             <button
-              onClick={() => setShowFullArticle((prev) => !prev)}
-              className="px-4 py-2 bg-surface-container text-on-surface rounded-full text-sm font-medium hover:bg-surface-container-high transition-colors"
+              onClick={() => navigate('/page1', { replace: true })}
+              className="text-xs md:text-sm px-3 py-1.5 rounded-full bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors"
             >
-              {showFullArticle ? '收起正文' : '展开正文阅读'}
+              返回今日任务入口
             </button>
           </div>
-        </div>
-
-        {/* Cover Image */}
-        <div className="mb-6 md:mb-10 rounded-xl md:rounded-2xl overflow-hidden bg-surface-container-high aspect-video relative w-full max-w-full">
-          <img 
-            src={doc.imageUrl || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2070&auto=format&fit=crop'} 
-            alt={doc.title}
-            className="w-full h-full object-cover"
-            referrerPolicy="no-referrer"
-          />
-        </div>
-
-        {/* AI Highlights Card */}
-        {(doc.summary && doc.summary.length > 0 && doc.summary[0] !== 'AI 摘要将在稍后生成...' || isGeneratingSummary) && (
-          <section className="mb-8 md:mb-12 p-4 md:p-8 rounded-xl bg-gradient-to-br from-primary/5 to-primary-container/10 border border-primary/5 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <Sparkles size={80} className="text-primary" />
-            </div>
-            <div className="flex items-center gap-2 mb-6 text-primary font-semibold">
-              <Bot size={20} />
-              <span className="text-sm tracking-wider">AI 智能摘要</span>
-            </div>
-            {isGeneratingSummary ? (
-              <div className="flex items-center gap-2 text-on-surface-variant">
-                <Loader2 size={16} className="animate-spin" />
-                <span>正在分析正文内容，请稍候...</span>
-              </div>
-            ) : (
-              <ul className="space-y-4 text-on-surface-variant leading-relaxed">
-                {doc.summary.map((point, index) => (
-                  <li key={index} className="flex gap-3">
-                    <span className="text-primary font-bold">{String(index + 1).padStart(2, '0')}</span>
-                    <span>{point}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        )}
-
-        {/* Article Content */}
-        {showFullArticle ? (
-          <article className="text-base md:text-lg text-on-surface-variant leading-relaxed space-y-6 whitespace-pre-wrap break-words">
+          <h1 className="text-2xl md:text-3xl font-headline font-extrabold text-on-surface leading-tight mb-3">{doc.title}</h1>
+          <p className="text-xs text-outline mb-4">预计阅读时间: {Math.max(1, Math.ceil(doc.content.length / 300))} 分钟</p>
+          <article className="text-sm md:text-base text-on-surface-variant leading-relaxed whitespace-pre-wrap">
             {doc.content}
           </article>
-        ) : (
-          <div className="rounded-xl border border-outline-variant/20 bg-surface-container-low p-4 md:p-5 text-sm text-on-surface-variant">
-            正文已折叠。你可以先看工作台概览与摘要，再按需展开深入阅读。
+        </section>
+
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={handleGenerateSummary}
+              disabled={isGeneratingSummary}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-medium hover:bg-primary/20 transition-colors disabled:opacity-50"
+            >
+              {isGeneratingSummary ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+              {isGeneratingSummary ? '生成中...' : '更新AI摘要'}
+            </button>
+            <button
+              onClick={() => navigate('/page4')}
+              className="px-3 py-1.5 rounded-full text-xs font-medium bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors"
+            >
+              开始复习
+            </button>
+          </div>
+
+          {hasSummary && (
+            <div className="p-4 md:p-6 rounded-xl bg-surface-container-lowest border border-outline-variant/20">
+              <button
+                onClick={() => setIsSummaryExpanded((prev) => !prev)}
+                className="w-full flex items-center justify-between gap-3 text-left"
+              >
+                <div className="flex items-center gap-2 text-primary font-semibold">
+                  <Bot size={18} />
+                  <span className="text-sm tracking-wide">AI 摘要</span>
+                </div>
+                {isSummaryExpanded ? <ChevronUp size={16} className="text-outline" /> : <ChevronDown size={16} className="text-outline" />}
+              </button>
+              {isSummaryExpanded && (
+                <div className="mt-4">
+                  {isGeneratingSummary ? (
+                    <div className="flex items-center gap-2 text-on-surface-variant text-sm">
+                      <Loader2 size={14} className="animate-spin" />
+                      <span>正在分析正文内容，请稍候...</span>
+                    </div>
+                  ) : (
+                    <ul className="space-y-3 text-sm text-on-surface-variant leading-relaxed">
+                      {doc.summary.map((point, index) => (
+                        <li key={index} className="flex gap-3">
+                          <span className="text-primary font-bold">{String(index + 1).padStart(2, '0')}</span>
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 overflow-y-auto px-4 md:px-10 py-6 md:py-10 max-w-5xl mx-auto w-full scrollbar-hide">
+      {/* 顶部概览区 */}
+      <section className="mb-6 md:mb-8 p-4 md:p-6 rounded-2xl border border-outline-variant/20 bg-surface-container-lowest shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h2 className="text-xl md:text-2xl font-headline font-bold text-on-surface">今日任务入口</h2>
+            <p className="text-sm text-on-surface-variant mt-1">先推进今天该做的：继续阅读、完成复习、沉淀感悟。</p>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => navigate(`/page1?id=${doc.id}&read=1`)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-on-primary rounded-full text-sm font-semibold hover:opacity-90 transition-opacity"
+            >
+              继续阅读
+              <ArrowRight size={16} />
+            </button>
+            <button
+              onClick={() => navigate('/page4')}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-surface-container text-on-surface rounded-full text-sm font-medium hover:bg-surface-container-high transition-colors"
+            >
+              <BrainCircuit size={16} />
+              开始复习
+            </button>
+            <button
+              onClick={() => navigate('/page3')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-transparent border border-outline-variant/40 text-outline rounded-full text-xs hover:text-on-surface hover:border-outline transition-colors"
+            >
+              <PlusCircle size={14} />
+              去新建
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* 今日概览数据卡 */}
+      <section className="mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <button
+            onClick={() => navigate('/page4')}
+            className="text-left rounded-xl bg-surface-container-low p-3.5 border border-outline-variant/10 hover:border-primary/30 hover:bg-primary/5 transition-colors"
+          >
+            <p className="text-[11px] text-outline mb-2">今日待复习数</p>
+            <p className="text-3xl font-extrabold text-on-surface leading-none">{pendingReviewCount}</p>
+          </button>
+          <button
+            onClick={() => navigate('/page2?range=7d')}
+            className="text-left rounded-xl bg-surface-container-low p-3.5 border border-outline-variant/10 hover:border-primary/30 hover:bg-primary/5 transition-colors"
+          >
+            <p className="text-[11px] text-outline mb-2">最近新增数（7天）</p>
+            <p className="text-3xl font-extrabold text-on-surface leading-none">{recentAddedCount}</p>
+          </button>
+          <div className="rounded-xl bg-surface-container-low p-3.5 border border-outline-variant/10">
+            <p className="text-[11px] text-outline mb-2">已掌握数</p>
+            <p className="text-3xl font-extrabold text-on-surface leading-none">{masteredCount}</p>
+          </div>
+        </div>
+      </section>
+
+      {/* 当前阅读内容卡（视觉中心） */}
+      <section className="mb-8 rounded-2xl overflow-hidden border border-primary/20 bg-gradient-to-br from-surface-container-lowest via-primary/5 to-primary-container/10 shadow-md">
+        <div className="p-5 md:p-7">
+          <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+            <span className="px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-xs font-medium">当前阅读</span>
+            <span className="text-xs text-outline">预计阅读时间: {Math.max(1, Math.ceil(doc.content.length / 300))} 分钟</span>
+          </div>
+          <h1 className="text-2xl md:text-4xl font-headline font-extrabold text-on-surface tracking-tight leading-tight break-words mb-3">{doc.title}</h1>
+          <p className="text-sm md:text-base text-on-surface-variant line-clamp-3">{doc.content}</p>
+          <div className="mt-5 flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => navigate(`/page1?id=${doc.id}&read=1`)}
+              className="px-5 py-2.5 bg-primary text-on-primary rounded-full text-sm font-semibold hover:opacity-90 transition-opacity"
+            >
+              继续阅读
+            </button>
+            <button
+              onClick={handleGenerateSummary}
+              disabled={isGeneratingSummary}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-medium hover:bg-primary/20 transition-colors disabled:opacity-50"
+            >
+              {isGeneratingSummary ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+              {isGeneratingSummary ? '生成中...' : '更新AI摘要'}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* AI 摘要 + 我的感悟 */}
+      <section className="space-y-6">
+        {hasSummary && (
+          <div className="p-4 md:p-6 rounded-xl bg-surface-container-lowest border border-outline-variant/20">
+            <button
+              onClick={() => setIsSummaryExpanded((prev) => !prev)}
+              className="w-full flex items-center justify-between gap-3 text-left"
+            >
+              <div className="flex items-center gap-2 text-primary font-semibold">
+                <Bot size={18} />
+                <span className="text-sm tracking-wide">AI 摘要</span>
+              </div>
+              {isSummaryExpanded ? <ChevronUp size={16} className="text-outline" /> : <ChevronDown size={16} className="text-outline" />}
+            </button>
+            {isSummaryExpanded && (
+              <div className="mt-4">
+                {isGeneratingSummary ? (
+                  <div className="flex items-center gap-2 text-on-surface-variant text-sm">
+                    <Loader2 size={14} className="animate-spin" />
+                    <span>正在分析正文内容，请稍候...</span>
+                  </div>
+                ) : (
+                  <ul className="space-y-3 text-sm text-on-surface-variant leading-relaxed">
+                    {doc.summary.map((point, index) => (
+                      <li key={index} className="flex gap-3">
+                        <span className="text-primary font-bold">{String(index + 1).padStart(2, '0')}</span>
+                        <span>{point}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
           </div>
         )}
 
-        {/* My Notes Editor */}
-        <section className="mt-10 md:mt-16 pt-8 md:pt-10 border-t border-surface-container-high w-full max-w-full min-w-0">
-          <div className="flex items-center justify-between mb-4 md:mb-6 flex-wrap gap-2">
-            <h3 className="text-lg md:text-xl font-bold flex items-center gap-2 text-on-surface">
-              <PenLine className="text-primary md:w-6 md:h-6" size={20} />
+        <div className="p-4 md:p-6 rounded-xl bg-surface-container-lowest border border-outline-variant/20 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold flex items-center gap-2 text-on-surface">
+              <PenLine className="text-primary" size={18} />
               我的感悟
             </h3>
-            <span className="text-xs text-outline italic">自动保存于 {new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+            <span className="text-xs text-outline">
+              {saveState === 'editing' ? '编辑中' : '已自动保存'}
+            </span>
           </div>
-          <div className="bg-surface-container-lowest rounded-xl p-4 md:p-6 border border-outline-variant/20 shadow-sm focus-within:ring-2 focus-within:ring-primary/10 transition-all w-full max-w-full min-w-0">
-            <textarea 
-              className="w-full min-h-[120px] bg-transparent border-none focus:ring-0 p-0 text-on-surface-variant placeholder:text-outline/40 leading-relaxed outline-none resize-none min-w-0" 
-              placeholder="输入你对这篇文章的思考或读书笔记..."
-            ></textarea>
-            <div className="flex items-center gap-2 md:gap-4 mt-4 pt-4 border-t border-surface-container flex-wrap">
-              <button className="text-outline hover:text-primary transition-colors p-1 md:p-0">
-                <Bold size={18} />
-              </button>
-              <button className="text-outline hover:text-primary transition-colors p-1 md:p-0">
-                <LinkIcon size={18} />
-              </button>
-              <button className="text-outline hover:text-primary transition-colors p-1 md:p-0">
-                <Paperclip size={18} />
-              </button>
-              <button 
-                onClick={() => showToast('笔记已保存')}
-                className="ml-auto px-4 md:px-6 py-2 bg-primary text-on-primary rounded-full text-xs md:text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap shrink-0"
-              >
-                保存笔记
-              </button>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      {/* Right Sidebar */}
-      <aside className="w-full xl:w-80 border-t xl:border-t-0 xl:border-l border-surface-container-high bg-surface-container-low/50 p-4 md:p-8 space-y-8 md:space-y-10 overflow-y-visible xl:overflow-y-auto scrollbar-hide min-w-0 shrink-0">
-        {/* Metadata */}
-        <div className="w-full max-w-full min-w-0">
-          <h4 className="text-xs font-bold text-outline uppercase tracking-widest mb-4">内容信息</h4>
-          <div className="space-y-3 md:space-y-4">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <span className="text-sm text-on-surface-variant">来源</span>
-              <span className="text-sm font-medium text-primary break-all">内部知识库</span>
-            </div>
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <span className="text-sm text-on-surface-variant">创建日期</span>
-              <span className="text-sm font-medium text-on-surface break-all">{doc.createdAt}</span>
-            </div>
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <span className="text-sm text-on-surface-variant">知识分类</span>
-              <span className="text-xs px-2 py-1 bg-surface-container-highest rounded text-on-surface-variant font-medium break-all">{doc.category}</span>
-            </div>
-          </div>
+          <textarea
+            value={insightValue}
+            onChange={(e) => {
+              setInsightValue(e.target.value);
+              setSaveState('editing');
+            }}
+            className="w-full min-h-[140px] bg-transparent border-none focus:ring-0 p-0 text-on-surface-variant placeholder:text-outline/40 leading-relaxed outline-none resize-none"
+            placeholder="输入你对这篇文章的思考或读书笔记..."
+          ></textarea>
         </div>
+      </section>
 
-        {/* Review Status */}
-        <div className="p-4 md:p-6 bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 w-full max-w-full min-w-0">
-          <h4 className="text-sm font-bold mb-4 flex items-center gap-2 text-on-surface">
-            <Clock className="text-tertiary" size={18} />
-            复习进度
-          </h4>
-          <div className="w-full bg-surface-container rounded-full h-1.5 mb-2">
-            <div className="bg-tertiary-container h-1.5 rounded-full" style={{ width: doc.reviewStatus === 'mastered' ? '100%' : '65%' }}></div>
-          </div>
-          <p className="text-xs text-outline mb-6">
-            {doc.reviewStatus === 'mastered' ? '已掌握' : '学习中 · 记忆保持率高'}
-          </p>
-          <button 
-            onClick={handleMarkMastered}
-            disabled={doc.reviewStatus === 'mastered'}
-            className={`w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
-              doc.reviewStatus === 'mastered' 
-                ? 'bg-surface-container-high text-outline cursor-not-allowed' 
-                : 'bg-gradient-to-r from-primary to-primary-container text-on-primary shadow-lg shadow-primary/20 active:scale-95'
-            }`}
-          >
-            <CheckCircle2 size={18} />
-            {doc.reviewStatus === 'mastered' ? '已掌握' : '标记已掌握'}
-          </button>
+      {/* 降级后的低优先模块 */}
+      <section className="mt-8 p-3 rounded-xl bg-surface-container-low border border-outline-variant/10">
+        <div className="flex items-center gap-2 text-[11px] text-outline mb-2">
+          <Info size={14} />
+          <span>低频信息（已弱化展示）</span>
         </div>
-
-        {/* Related Recommendations */}
-        <div className="w-full max-w-full min-w-0">
-          <h4 className="text-xs font-bold text-outline uppercase tracking-widest mb-4 md:mb-6">关联推荐</h4>
-          <div className="space-y-4 md:space-y-6">
-            {relatedDocs.map(relatedDoc => (
-              <div 
-                key={relatedDoc.id} 
-                className="group block cursor-pointer w-full max-w-full min-w-0" 
-                onClick={() => navigate(`/page1?id=${relatedDoc.id}`)}
-              >
-                <p className="text-xs text-primary font-medium mb-1 truncate">来自 关联标签 #{relatedDoc.tags?.[0] || '默认'}</p>
-                <h5 className="text-sm font-bold text-on-surface group-hover:text-primary transition-colors leading-snug break-words">
-                  {relatedDoc.title}
-                </h5>
-              </div>
-            ))}
-            <a className="group block w-full max-w-full min-w-0" href="#">
-              <div className="bg-surface-container-highest p-3 md:p-4 rounded-lg flex items-center gap-2 md:gap-3 hover:bg-surface-variant transition-colors">
-                <Link2 className="text-outline shrink-0" size={18} />
-                <span className="text-xs text-outline font-medium truncate">手动关联更多内容...</span>
-              </div>
-            </a>
-          </div>
+        <div className="flex flex-wrap gap-2 text-xs">
+          <span className="px-2 py-1 rounded-full bg-surface-container-high text-on-surface-variant inline-flex items-center gap-1"><Clock size={12} />复习进度：{doc.reviewStatus === 'mastered' ? '已掌握' : '学习中'}</span>
+          <span className="px-2 py-1 rounded-full bg-surface-container-high text-on-surface-variant inline-flex items-center gap-1"><CheckCircle2 size={12} />内容信息：{doc.category}</span>
+          {relatedDocs[0] && (
+            <button
+              onClick={() => navigate(`/page1?id=${relatedDocs[0].id}`)}
+              className="px-2 py-1 rounded-full bg-surface-container-high text-on-surface-variant hover:text-primary inline-flex items-center gap-1"
+            >
+              <Link2 size={12} />关联推荐：{relatedDocs[0].title.slice(0, 10)}...
+            </button>
+          )}
         </div>
-      </aside>
+      </section>
     </div>
   );
 }
