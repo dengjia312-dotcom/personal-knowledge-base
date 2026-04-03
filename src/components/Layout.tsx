@@ -24,9 +24,9 @@ export default function Layout() {
   };
 
   return (
-    <div className="flex min-h-screen w-full max-w-full overflow-x-hidden bg-background text-on-surface font-body selection:bg-primary-fixed selection:text-on-primary-fixed">
+    <div className="flex h-screen overflow-hidden w-full bg-background text-on-surface font-body selection:bg-primary-fixed selection:text-on-primary-fixed">
       {/* Sidebar */}
-      <aside className="hidden md:flex w-[280px] shrink-0 h-screen sticky top-0 left-0 bg-slate-50 flex-col py-8 px-4 font-headline text-sm tracking-wide border-r border-slate-100">
+      <aside className="hidden md:flex w-[280px] shrink-0 h-full bg-slate-50 flex-col py-8 px-4 font-headline text-sm tracking-wide border-r border-slate-100 overflow-y-auto">
         <div className="mb-10 px-4">
           <span className="text-xl font-bold text-indigo-600">信息分类</span>
           <p className="text-xs text-slate-400 mt-1">个人知识库</p>
@@ -62,7 +62,7 @@ export default function Layout() {
       </aside>
 
       {/* Main Area */}
-      <div className="flex-1 flex flex-col min-w-0 w-full max-w-full pb-16 md:pb-0">
+      <div className="flex-1 min-h-0 flex flex-col min-w-0 overflow-y-auto pb-16 md:pb-0">
         {/* Top Navbar */}
         <header className="w-full max-w-full h-16 sticky top-0 z-40 bg-white/80 backdrop-blur-md flex justify-between items-center px-4 md:px-8 border-b border-slate-100/50 shadow-sm min-w-0">
           <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0 mr-2 md:mr-4">
@@ -103,7 +103,7 @@ export default function Layout() {
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 flex overflow-hidden min-w-0 w-full max-w-full">
+        <main className="flex-1 min-w-0">
           <Outlet />
         </main>
       </div>
