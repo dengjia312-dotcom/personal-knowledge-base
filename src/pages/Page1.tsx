@@ -27,8 +27,10 @@ export default function Page1() {
 
   useEffect(() => {
     if (!doc) return;
-    const savedInsight = localStorage.getItem(`kb_insight_${doc.id}`) || '';
-    setInsightValue(savedInsight);
+    fetch(`/api/insights/${doc.id}`)
+      .then(r => r.json())
+      .then(data => setInsightValue(data.content ?? ''))
+      .catch(() => setInsightValue(''));
     setSaveState('idle');
   }, [doc]);
 
@@ -41,7 +43,11 @@ export default function Page1() {
   useEffect(() => {
     if (!doc || saveState !== 'editing') return;
     const timer = setTimeout(() => {
-      localStorage.setItem(`kb_insight_${doc.id}`, insightValue);
+      fetch(`/api/insights/${doc.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: insightValue }),
+      }).catch(console.error);
       setSaveState('saved');
     }, 700);
 

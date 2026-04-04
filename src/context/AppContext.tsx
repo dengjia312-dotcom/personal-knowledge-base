@@ -107,52 +107,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [toast, setToast] = useState({ message: '', visible: false });
 
   useEffect(() => {
-    const storedDocs = localStorage.getItem('kb_documents');
-    if (storedDocs) {
-      const parsedDocs: Document[] = JSON.parse(storedDocs);
-      // Auto-fill missing imageUrls from defaultDocs
-      const updatedDocs = parsedDocs.map(doc => {
-        if (!doc.imageUrl) {
-          const defaultDoc = defaultDocs.find(d => d.id === doc.id);
-          if (defaultDoc && defaultDoc.imageUrl) {
-            return { ...doc, imageUrl: defaultDoc.imageUrl };
-          }
-        }
-        return doc;
-      });
-      setDocuments(updatedDocs);
-      // Update localStorage if any docs were modified
-      if (JSON.stringify(parsedDocs) !== JSON.stringify(updatedDocs)) {
-        localStorage.setItem('kb_documents', JSON.stringify(updatedDocs));
-      }
-    } else {
-      setDocuments(defaultDocs);
-      localStorage.setItem('kb_documents', JSON.stringify(defaultDocs));
-    }
+    fetch('/api/documents')
+      .then(r => r.json())
+      .then((docs: Document[]) => setDocuments(docs))
+      .catch(() => setDocuments(defaultDocs));
 
-    const storedProfile = localStorage.getItem('kb_profile');
-    if (storedProfile) {
-      setUserProfile(JSON.parse(storedProfile));
-    } else {
-      localStorage.setItem('kb_profile', JSON.stringify(defaultProfile));
-    }
+    fetch('/api/profile')
+      .then(r => r.json())
+      .then((profile: UserProfile) => setUserProfile(profile))
+      .catch(() => setUserProfile(defaultProfile));
   }, []);
 
   const addDocument = (doc: Document) => {
-    const newDocs = [doc, ...documents];
-    setDocuments(newDocs);
-    localStorage.setItem('kb_documents', JSON.stringify(newDocs));
+    fetch('/api/documents', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(doc),
+    })
+      .then(r => {
+        if (!r.ok) throw new Error(`保存失败 (${r.status})`);
+        return r.json();
+      })
+      .then(() => setDocuments(prev => [doc, ...prev]))
+      .catch(err => console.error('addDocument failed:', err));
   };
 
   const updateDocument = (id: string, updates: Partial<Document>) => {
-    const newDocs = documents.map(d => d.id === id ? { ...d, ...updates } : d);
-    setDocuments(newDocs);
-    localStorage.setItem('kb_documents', JSON.stringify(newDocs));
+    setDocuments(prev => prev.map(d => d.id === id ? { ...d, ...updates } : d));
+    fetch(`/api/documents/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    }).catch(console.error);
   };
 
   const updateUserProfile = (profile: UserProfile) => {
     setUserProfile(profile);
-    localStorage.setItem('kb_profile', JSON.stringify(profile));
+    fetch('/api/profile', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(profile),
+    }).catch(console.error);
   };
 
   const showToast = (message: string) => {

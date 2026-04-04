@@ -2,6 +2,9 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import path from "path";
+import { getAllDocuments, createDocument, updateDocument } from "./db/documents";
+import { getProfile, updateProfile } from "./db/profile";
+import { db } from "./db/database";
 
 async function startServer() {
   const app = express();
@@ -12,6 +15,64 @@ async function startServer() {
   // API routes FIRST
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
+  });
+
+  // Documents API
+  app.get("/api/documents", (req, res) => {
+    try {
+      res.json(getAllDocuments());
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/documents", (req, res) => {
+    try {
+      const doc = createDocument(req.body);
+      res.status(201).json(doc);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.put("/api/documents/:id", (req, res) => {
+    try {
+      const updated = updateDocument(req.params.id, req.body);
+      if (!updated) return res.status(404).json({ error: "Document not found" });
+      res.json(updated);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Profile API
+  app.get("/api/profile", (req, res) => {
+    try {
+      res.json(getProfile());
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.put("/api/profile", (req, res) => {
+    try {
+      res.json(updateProfile(req.body));
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // Insights API
+  app.get("/api/insights/:docId", (req, res) => {
+    const row = db.prepare('SELECT content FROM insights WHERE docId = ?').get(req.params.docId) as { content: string } | undefined;
+    res.json({ content: row?.content ?? '' });
+  });
+
+  app.put("/api/insights/:docId", (req, res) => {
+    const { content } = req.body;
+    db.prepare('INSERT INTO insights (docId, content) VALUES (?, ?) ON CONFLICT(docId) DO UPDATE SET content = excluded.content')
+      .run(req.params.docId, content ?? '');
+    res.json({ content: content ?? '' });
   });
 
   app.post("/api/summarize", async (req, res) => {
