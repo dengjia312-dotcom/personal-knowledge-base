@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+
+const API_BASE = (import.meta.env.VITE_API_BASE_URL as string) ?? '';
 import { useNavigate } from 'react-router-dom';
 import { Save, Image as ImageIcon, List, Type, Hash, Sparkles, Bot, Loader2 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
@@ -30,7 +32,7 @@ export default function Page3() {
 
     setIsGeneratingSummary(true);
     try {
-      const response = await fetch('/api/summarize', {
+      const response = await fetch(`${API_BASE}/api/summarize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content })

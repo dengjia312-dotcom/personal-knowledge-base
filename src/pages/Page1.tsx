@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
+
+const API_BASE = (import.meta.env.VITE_API_BASE_URL as string) ?? '';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Sparkles, Bot, PenLine, Loader2, PlusCircle, BrainCircuit, ArrowRight, ChevronDown, ChevronUp, CheckCircle2, Clock, Link2, Info } from 'lucide-react';
 import { useAppContext, Document } from '../context/AppContext';
@@ -27,7 +29,7 @@ export default function Page1() {
 
   useEffect(() => {
     if (!doc) return;
-    fetch(`/api/insights/${doc.id}`)
+    fetch(`${API_BASE}/api/insights/${doc.id}`)
       .then(r => r.json())
       .then(data => setInsightValue(data.content ?? ''))
       .catch(() => setInsightValue(''));
@@ -43,7 +45,7 @@ export default function Page1() {
   useEffect(() => {
     if (!doc || saveState !== 'editing') return;
     const timer = setTimeout(() => {
-      fetch(`/api/insights/${doc.id}`, {
+      fetch(`${API_BASE}/api/insights/${doc.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: insightValue }),
@@ -73,7 +75,7 @@ export default function Page1() {
 
     setIsGeneratingSummary(true);
     try {
-      const response = await fetch('/api/summarize', {
+      const response = await fetch(`${API_BASE}/api/summarize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: doc.content })

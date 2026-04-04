@@ -1,5 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL as string) ?? '';
+
 export interface Document {
   id: string;
   title: string;
@@ -107,19 +109,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [toast, setToast] = useState({ message: '', visible: false });
 
   useEffect(() => {
-    fetch('/api/documents')
+    fetch(`${API_BASE}/api/documents`)
       .then(r => r.json())
       .then((docs: Document[]) => setDocuments(docs))
       .catch(() => setDocuments(defaultDocs));
 
-    fetch('/api/profile')
+    fetch(`${API_BASE}/api/profile`)
       .then(r => r.json())
       .then((profile: UserProfile) => setUserProfile(profile))
       .catch(() => setUserProfile(defaultProfile));
   }, []);
 
   const addDocument = (doc: Document) => {
-    fetch('/api/documents', {
+    fetch(`${API_BASE}/api/documents`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(doc),
@@ -134,7 +136,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateDocument = (id: string, updates: Partial<Document>) => {
     setDocuments(prev => prev.map(d => d.id === id ? { ...d, ...updates } : d));
-    fetch(`/api/documents/${id}`, {
+    fetch(`${API_BASE}/api/documents/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
@@ -143,7 +145,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateUserProfile = (profile: UserProfile) => {
     setUserProfile(profile);
-    fetch('/api/profile', {
+    fetch(`${API_BASE}/api/profile`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(profile),
