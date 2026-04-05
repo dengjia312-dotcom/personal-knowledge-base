@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="480" viewBox="0 0 800 480">
+  <rect width="800" height="480" fill="#111820"/>
+  <rect x="160" y="300" width="32" height="80" rx="4" fill="#e2a84b" opacity="0.3"/>
+  <rect x="220" y="250" width="32" height="130" rx="4" fill="#e2a84b" opacity="0.45"/>
+  <rect x="280" y="210" width="32" height="170" rx="4" fill="#e2a84b" opacity="0.55"/>
+  <rect x="340" y="160" width="32" height="220" rx="4" fill="#e2a84b" opacity="0.7"/>
+  <rect x="400" y="120" width="32" height="260" rx="4" fill="#e2a84b" opacity="0.85"/>
+  <rect x="460" y="140" width="32" height="240" rx="4" fill="#e2a84b" opacity="0.75"/>
+  <rect x="520" y="180" width="32" height="200" rx="4" fill="#e2a84b" opacity="0.55"/>
+  <rect x="580" y="240" width="32" height="140" rx="4" fill="#e2a84b" opacity="0.4"/>
+  <text x="400" y="420" text-anchor="middle" font-family="Georgia, serif" font-size="15" fill="#e2a84b" opacity="0.7" letter-spacing="3">DEEP WORK</text>
+</svg>

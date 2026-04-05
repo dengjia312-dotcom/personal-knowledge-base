@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* 使用 .dark class 触发深色模式（而非 media query） */
+@variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-tertiary: #904900;
   --color-outline-variant: #c7c4d7;
@@ -54,6 +57,59 @@
   --font-label: "Inter", "PingFang SC", sans-serif;
 }
 
+/* 深色模式：深灰底 + 柔和紫蓝点缀，同一产品气质 */
+.dark {
+  /* ── 背景层级（从深到浅，每层有明显区分） ── */
+  --color-background: #111117;
+  --color-surface: #111117;
+  --color-surface-dim: #0d0d12;
+  --color-surface-bright: #1e1e28;
+
+  --color-surface-container-lowest: #17171f;  /* 卡片底层 */
+  --color-surface-container-low:    #1c1c26;  /* 输入框、次级面板 */
+  --color-surface-container:        #222230;  /* 主面板、侧边栏 */
+  --color-surface-container-high:   #2a2a3a;  /* 悬浮菜单、高层卡片 */
+  --color-surface-container-highest: #323244; /* 最高层浮层 */
+  --color-surface-variant:          #2a2a3a;
+
+  /* ── 文字层级 ── */
+  --color-on-surface:         #edeaff;   /* 主文字：高亮度、微紫 */
+  --color-on-surface-variant: #b8b5d2;   /* 次级文字 */
+  --color-on-background:      #edeaff;
+
+  /* ── 边框 / 分割线 ── */
+  --color-outline:         #7a7890;      /* 描述性文字、弱提示 */
+  --color-outline-variant: #2e2c44;      /* 细边框、分割线 */
+
+  /* ── Primary ── */
+  --color-primary:           #9496ff;
+  --color-on-primary:        #12126e;
+  --color-primary-container: #2e30b0;
+  --color-on-primary-container: #e0e0ff;
+  --color-primary-fixed:     #26288a;
+  --color-primary-fixed-dim: #7274e8;
+  --color-inverse-primary:   #4648d4;
+
+  /* ── Secondary ── */
+  --color-secondary:           #a8aadc;
+  --color-on-secondary:        #18183e;
+  --color-secondary-container: #2a2c72;
+  --color-on-secondary-container: #d8d8ff;
+  --color-secondary-fixed:     #222468;
+  --color-secondary-fixed-dim: #9092cc;
+
+  /* ── Error ── */
+  --color-error:             #ffb4ab;
+  --color-on-error:          #690005;
+  --color-error-container:   #7a0008;
+  --color-on-error-container: #ffdad6;
+
+  /* ── 其他 ── */
+  --color-inverse-surface:    #edeaff;
+  --color-inverse-on-surface: #1b1b23;
+  --color-surface-tint:       #9496ff;
+}
+
 @layer base {
   html {
     font-size: 16px;
@@ -94,6 +150,19 @@
   button {
     font-family: inherit;
     font-size: 0.875rem; /* 14px，与正文一致 */
+  }
+
+  /* 深色模式下 placeholder 可见性 */
+  .dark input::placeholder,
+  .dark textarea::placeholder {
+    color: var(--color-outline);
+    opacity: 0.7;
+  }
+
+  /* 深色模式 selection */
+  .dark ::selection {
+    background-color: var(--color-primary-fixed);
+    color: var(--color-on-primary-container);
   }
 }
 

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="480" viewBox="0 0 800 480">
+  <rect width="800" height="480" fill="#16101e"/>
+  <path d="M 280 220 A 120 120 0 1 1 520 220" fill="none" stroke="#c084fc" stroke-width="2" opacity="0.6"/>
+  <polygon points="520,220 510,205 530,210" fill="#c084fc" opacity="0.7"/>
+  <circle cx="280" cy="220" r="36" fill="#1e1030" stroke="#c084fc" stroke-width="1.5" opacity="0.8"/>
+  <text x="280" y="217" text-anchor="middle" font-family="Georgia, serif" font-size="11" fill="#c084fc">阅读</text>
+  <text x="280" y="231" text-anchor="middle" font-family="Georgia, serif" font-size="11" fill="#c084fc">READ</text>
+  <circle cx="400" cy="115" r="36" fill="#1e1030" stroke="#c084fc" stroke-width="1.5" opacity="0.7"/>
+  <text x="400" y="112" text-anchor="middle" font-family="Georgia, serif" font-size="11" fill="#c084fc">内化</text>
+  <text x="400" y="126" text-anchor="middle" font-family="Georgia, serif" font-size="11" fill="#c084fc">DIGEST</text>
+  <circle cx="520" cy="220" r="36" fill="#1e1030" stroke="#c084fc" stroke-width="1.5" opacity="0.8"/>
+  <text x="520" y="217" text-anchor="middle" font-family="Georgia, serif" font-size="11" fill="#c084fc">输出</text>
+  <text x="520" y="231" text-anchor="middle" font-family="Georgia, serif" font-size="11" fill="#c084fc">OUTPUT</text>
+  <text x="400" y="420" text-anchor="middle" font-family="Georgia, serif" font-size="15" fill="#c084fc" opacity="0.7" letter-spacing="3">READING LOOP</text>
+</svg>

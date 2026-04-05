@@ -93,7 +93,7 @@ export default function Page3() {
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-surface-container-lowest">
       {/* Editor Toolbar */}
-      <div className="h-14 border-b border-outline-variant/20 flex items-center justify-between px-6 bg-white">
+      <div className="h-14 border-b border-outline-variant/20 flex items-center justify-between px-6 bg-white dark:bg-surface-container-low">
         <div className="flex items-center gap-2">
           <button className="p-2 text-on-surface-variant hover:bg-surface-container rounded-lg transition-colors">
             <Type size={18} />

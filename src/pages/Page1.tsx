@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL as string) ?? '';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Sparkles, Bot, PenLine, Loader2, PlusCircle, BrainCircuit, ArrowRight, ChevronDown, ChevronUp, CheckCircle2, Clock, Link2, Info } from 'lucide-react';
+import { Sparkles, Bot, PenLine, Loader2, Library, BrainCircuit, ArrowRight, ChevronDown, ChevronUp, CheckCircle2, Clock, Link2, Info } from 'lucide-react';
 import { useAppContext, Document } from '../context/AppContext';
 
 export default function Page1() {
@@ -206,11 +206,11 @@ export default function Page1() {
               开始复习
             </button>
             <button
-              onClick={() => navigate('/page3')}
+              onClick={() => navigate('/page2')}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-transparent border border-outline-variant/40 text-outline rounded-full text-xs hover:text-on-surface hover:border-outline transition-colors"
             >
-              <PlusCircle size={14} />
-              去新建
+              <Library size={14} />
+              查看知识库
             </button>
           </div>
         </div>
