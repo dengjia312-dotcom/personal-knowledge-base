@@ -6,6 +6,7 @@ import Page2 from './pages/Page2';
 import Page3 from './pages/Page3';
 import Page4 from './pages/Page4';
 import Page5 from './pages/Page5';
+import KnowledgeSpace from './pages/KnowledgeSpace';
 import { AppProvider } from './context/AppContext';
 import { useTheme } from './hooks/useTheme';
 
@@ -14,6 +15,9 @@ function ThemedApp() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Knowledge Space: full-screen, outside main Layout */}
+        <Route path="/knowledge-space" element={<KnowledgeSpace />} />
+
         <Route path="/" element={<Layout />}>
           <Route index element={<Navigate to="/page3" replace />} />
           <Route path="page1" element={<Page1 />} />

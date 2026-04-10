@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
 import {
   LayoutDashboard,
   Library,
@@ -12,6 +12,7 @@ import {
   Sun,
   Moon,
   Monitor,
+  Network,
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { useTheme, ThemeMode } from '../hooks/useTheme';
@@ -216,6 +217,25 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Knowledge Space floating entry button */}
+      <Link
+        to="/knowledge-space"
+        title="进入 Knowledge Space"
+        className="fixed bottom-20 right-5 md:bottom-6 z-40 flex items-center gap-2 px-3.5 py-2.5 rounded-full shadow-lg transition-all duration-200 hover:scale-105 active:scale-95"
+        style={{
+          background: 'linear-gradient(135deg, #2a2870 0%, #1a1a40 100%)',
+          border: '1px solid rgba(148,150,255,0.35)',
+          boxShadow: '0 4px 20px rgba(100,102,220,0.3)',
+          color: '#c0c1ff',
+          fontSize: '12px',
+          fontWeight: 600,
+          letterSpacing: '0.02em',
+        }}
+      >
+        <Network size={15} />
+        <span className="hidden sm:inline">Knowledge Space</span>
+      </Link>
 
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface-container-low border-t border-outline-variant/20 flex justify-around items-center h-16 px-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
