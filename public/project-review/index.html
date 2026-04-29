@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LumenKB 项目说明 | AI 与面试官快速评审入口</title>
+    <meta
+      name="description"
+      content="LumenKB 是一个面向学习者和知识工作者的个人知识管理项目，聚焦内容沉淀、AI 摘要、知识复习和长期调用。"
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7f8f5;
+        --panel: #ffffff;
+        --ink: #20241f;
+        --muted: #667064;
+        --line: #dfe5da;
+        --accent: #2d6a4f;
+        --accent-soft: #e0f1e9;
+        --warn: #8a5b16;
+        --warn-soft: #fff1cf;
+        --code: #eef3eb;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--ink);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+        line-height: 1.65;
+      }
+
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      .shell {
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+      }
+
+      header {
+        padding: 56px 0 28px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 0 16px;
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        max-width: 760px;
+        font-size: clamp(34px, 6vw, 64px);
+        line-height: 1.08;
+        letter-spacing: 0;
+      }
+
+      .lead {
+        max-width: 760px;
+        margin: 22px 0 0;
+        color: var(--muted);
+        font-size: 18px;
+      }
+
+      .quick-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 28px;
+      }
+
+      .quick-links a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 42px;
+        padding: 0 16px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        color: var(--ink);
+        font-weight: 700;
+      }
+
+      main {
+        padding: 14px 0 56px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 18px;
+      }
+
+      section {
+        grid-column: span 6;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 26px;
+      }
+
+      section.wide {
+        grid-column: 1 / -1;
+      }
+
+      h2 {
+        margin: 0 0 14px;
+        font-size: 22px;
+        line-height: 1.25;
+      }
+
+      h3 {
+        margin: 22px 0 8px;
+        font-size: 16px;
+      }
+
+      p {
+        margin: 0 0 12px;
+      }
+
+      ul,
+      ol {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      li + li {
+        margin-top: 8px;
+      }
+
+      code {
+        padding: 2px 6px;
+        border-radius: 6px;
+        background: var(--code);
+        color: #1f3f32;
+        font-family:
+          "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        font-size: 0.92em;
+      }
+
+      .summary-band {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-top: 26px;
+      }
+
+      .metric {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfa;
+        padding: 16px;
+      }
+
+      .metric strong {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--accent);
+        font-size: 13px;
+      }
+
+      .metric span {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-top: 16px;
+      }
+
+      .step {
+        min-height: 132px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfa;
+        padding: 16px;
+      }
+
+      .step b {
+        display: inline-flex;
+        width: 28px;
+        height: 28px;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 10px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+
+      .stack {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .stack span {
+        display: inline-flex;
+        align-items: center;
+        min-height: 34px;
+        padding: 0 12px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: #1f4c39;
+        font-weight: 700;
+        font-size: 14px;
+      }
+
+      .quote {
+        border-left: 4px solid var(--accent);
+        background: #fbfcfa;
+        padding: 16px 18px;
+        color: var(--muted);
+      }
+
+      .note {
+        border-color: #f1d28c;
+        background: var(--warn-soft);
+      }
+
+      .note h2,
+      .note strong {
+        color: var(--warn);
+      }
+
+      footer {
+        padding: 24px 0 48px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      @media (max-width: 880px) {
+        section {
+          grid-column: 1 / -1;
+          padding: 22px;
+        }
+
+        .summary-band,
+        .flow {
+          grid-template-columns: 1fr;
+        }
+
+        header {
+          padding-top: 38px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="shell">
+      <p class="eyebrow">LumenKB Project Review</p>
+      <h1>把碎片信息变成可复习、可调用的个人知识库</h1>
+      <p class="lead">
+        LumenKB 是一个面向学习者、知识工作者和求职作品集场景的个人知识管理应用。它把「记录内容」「AI 提炼」「个人感悟」「复习巩固」放在同一条闭环里，强调知识不是收藏，而是能被再次理解和使用。
+      </p>
+      <nav class="quick-links" aria-label="快速入口">
+        <a href="/project-summary.md">读取 Markdown 摘要</a>
+        <a href="/">打开应用首页</a>
+      </nav>
+
+      <div class="summary-band" aria-label="项目速览">
+        <div class="metric">
+          <strong>项目类型</strong>
+          <span>AI 辅助个人知识管理工具</span>
+        </div>
+        <div class="metric">
+          <strong>核心用户</strong>
+          <span>学习者、内容创作者、知识工作者</span>
+        </div>
+        <div class="metric">
+          <strong>关键能力</strong>
+          <span>新建文档、AI 摘要、检索、复习、感悟沉淀</span>
+        </div>
+        <div class="metric">
+          <strong>技术路线</strong>
+          <span>React + Vite + Express + PostgreSQL + Gemini</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="shell">
+      <div class="grid">
+        <section id="positioning" class="wide">
+          <h2>项目定位</h2>
+          <p>
+            LumenKB 不是单纯的笔记列表，也不是只做聊天问答的 AI 工具。它定位为一个轻量的个人知识库，让用户把读到的文章、技术资料、复盘材料和灵感记录为结构化文档，再通过 AI 摘要与复习机制持续加工。
+          </p>
+          <p>
+            项目名称中的 Lumen 表达「照亮」和「理解」，KB 代表 Knowledge Base。产品重点是把用户的输入从信息层推进到知识层。
+          </p>
+        </section>
+
+        <section id="users">
+          <h2>目标用户</h2>
+          <ul>
+            <li>正在学习新领域的人，需要把资料转化为自己的理解。</li>
+            <li>知识工作者，需要在项目、阅读、研究和输出之间复用知识。</li>
+            <li>求职者或作品集展示者，需要展示自己对 AI 产品、前后端和数据持久化的完整实现能力。</li>
+            <li>内容创作者，需要把素材、摘要、标签和复盘结果组织起来。</li>
+          </ul>
+        </section>
+
+        <section id="pain-points">
+          <h2>核心痛点</h2>
+          <ul>
+            <li>收藏很多资料，但缺少主动加工，之后很难再次使用。</li>
+            <li>笔记内容越积越多，检索和分类成本升高。</li>
+            <li>读完内容后没有即时摘要，后续复盘需要重新阅读全文。</li>
+            <li>学习记录和复习流程割裂，无法判断哪些知识已经掌握。</li>
+          </ul>
+        </section>
+
+        <section id="flow" class="wide">
+          <h2>核心流程</h2>
+          <div class="flow">
+            <article class="step">
+              <b>1</b>
+              <h3>输入内容</h3>
+              <p>用户新建知识记录，补充标题、分类、标签和正文。</p>
+            </article>
+            <article class="step">
+              <b>2</b>
+              <h3>AI 提炼</h3>
+              <p>通过 Gemini 生成短摘要，帮助用户快速抓住关键观点。</p>
+            </article>
+            <article class="step">
+              <b>3</b>
+              <h3>沉淀理解</h3>
+              <p>在阅读页写下个人感悟，将外部信息转化为自己的判断。</p>
+            </article>
+            <article class="step">
+              <b>4</b>
+              <h3>复习巩固</h3>
+              <p>每日复习队列根据掌握状态推进，形成持续回顾闭环。</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="features">
+          <h2>当前功能</h2>
+          <ul>
+            <li>知识文档的创建、展示、分类和标签管理。</li>
+            <li>知识库列表页，支持搜索、分类筛选和掌握状态筛选。</li>
+            <li>文档详情页，展示正文、预计阅读时间、AI 摘要和个人感悟。</li>
+            <li>AI 摘要接口，后端调用 Google Gemini 生成结构化摘要。</li>
+            <li>每日复习页，使用翻卡交互记录「记得、模糊、忘记」等结果。</li>
+            <li>个人资料读取与更新，以及系统内置示例文档同步。</li>
+          </ul>
+        </section>
+
+        <section id="stack">
+          <h2>技术栈</h2>
+          <div class="stack" aria-label="技术栈列表">
+            <span>React</span>
+            <span>TypeScript</span>
+            <span>Vite</span>
+            <span>React Router</span>
+            <span>Tailwind CSS</span>
+            <span>Express</span>
+            <span>PostgreSQL</span>
+            <span>Google Gemini API</span>
+            <span>Vercel</span>
+          </div>
+          <h3>架构说明</h3>
+          <p>
+            前端负责知识库、编辑、阅读和复习体验；后端提供文档、用户资料、个人感悟和 AI 摘要 API；数据库负责持久化文档、摘要、标签、复习状态与感悟内容。
+          </p>
+        </section>
+
+        <section id="highlights">
+          <h2>项目亮点</h2>
+          <ul>
+            <li>完整闭环：从输入、摘要、阅读、感悟到复习，不停留在静态笔记。</li>
+            <li>AI 用得克制：AI 负责提炼摘要，最终理解仍由用户通过感悟和复习完成。</li>
+            <li>数据模型清晰：文档、摘要、标签、复习状态、感悟内容分工明确。</li>
+            <li>展示友好：同时提供静态 HTML 和 Markdown 两个入口，方便 AI、面试官和部署平台直接读取。</li>
+          </ul>
+        </section>
+
+        <section id="next">
+          <h2>下一版迭代</h2>
+          <ul>
+            <li>增加语义搜索和相似文档推荐，让知识之间形成更强连接。</li>
+            <li>引入间隔重复算法，根据复习结果动态安排下一次复习时间。</li>
+            <li>支持 Markdown 导入导出，方便用户迁移和备份个人知识库。</li>
+            <li>增加知识图谱视图，展示标签、分类和文档之间的关系。</li>
+            <li>完善鉴权与多用户隔离，让项目从作品集演示走向真实使用。</li>
+          </ul>
+        </section>
+
+        <section id="interview" class="wide">
+          <h2>面试表达</h2>
+          <div class="quote">
+            <p>
+              我做 LumenKB 的出发点是解决个人知识管理里「只收藏、不消化」的问题。项目把知识记录、AI 摘要、个人感悟和每日复习串成一个闭环。前端用 React 和 Vite 实现多页面体验，后端用 Express 提供文档、用户资料、感悟和 AI 摘要接口，数据持久化在 PostgreSQL 中。这个项目重点展示的是我把 AI 能力嵌入具体业务流程的能力，而不是为了 AI 而 AI。
+            </p>
+          </div>
+        </section>
+
+        <section class="wide note" id="readable-entry">
+          <h2>给 AI 与面试官的读取方式</h2>
+          <p>
+            如果需要快速抽取项目信息，请优先读取 <code>/project-summary.md</code>。如果需要以网页方式评审，请访问 <code>/project-review/</code>。这两个入口都是静态资源，部署后不依赖 React 运行时。
+          </p>
+        </section>
+      </div>
+    </main>
+
+    <footer class="shell">
+      <p>LumenKB project review page. Static HTML entry for portfolio review and AI-readable project context.</p>
+    </footer>
+  </body>
+</html>
