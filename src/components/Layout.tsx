@@ -3,6 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Library,
+  BrainCircuit,
   PlusCircle,
   BookOpen,
   Settings,
@@ -16,7 +17,23 @@ import {
 import { useAppContext } from '../context/AppContext';
 import { useTheme, ThemeMode } from '../hooks/useTheme';
 
-const HELP_SEEN_KEY = 'lumenkb_help_seen';
+const WELCOME_SEEN_KEY = 'lumenkb_welcome_seen';
+
+function hasSeenWelcome() {
+  try {
+    return localStorage.getItem(WELCOME_SEEN_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markWelcomeSeen() {
+  try {
+    localStorage.setItem(WELCOME_SEEN_KEY, '1');
+  } catch {
+    return;
+  }
+}
 
 function WelcomeModal({ onClose }: { onClose: () => void }) {
   return (
@@ -81,12 +98,16 @@ export default function Layout() {
     return () => document.removeEventListener('mousedown', handler);
   }, [showThemeMenu]);
 
-  const [showWelcome, setShowWelcome] = React.useState(() => {
-    return !localStorage.getItem(HELP_SEEN_KEY);
-  });
+  const [showWelcome, setShowWelcome] = useState(false);
+
+  useEffect(() => {
+    if (!hasSeenWelcome()) {
+      setShowWelcome(true);
+    }
+  }, []);
 
   const closeWelcome = () => {
-    localStorage.setItem(HELP_SEEN_KEY, '1');
+    markWelcomeSeen();
     setShowWelcome(false);
   };
 
@@ -119,6 +140,10 @@ export default function Layout() {
           <NavLink to="/page2" className={navLinkClass}>
             <Library size={20} />
             <span>知识库</span>
+          </NavLink>
+          <NavLink to="/brain" className={navLinkClass}>
+            <BrainCircuit size={20} />
+            <span>知识脑图</span>
           </NavLink>
           <NavLink to="/page3" className={navLinkClass}>
             <PlusCircle size={20} />
@@ -226,6 +251,10 @@ export default function Layout() {
         <NavLink to="/page2" className={({ isActive }) => `flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive ? 'text-primary' : 'text-on-surface-variant hover:text-primary'}`}>
           <Library size={20} />
           <span className="text-[10px] font-medium">知识库</span>
+        </NavLink>
+        <NavLink to="/brain" className={({ isActive }) => `flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive ? 'text-primary' : 'text-on-surface-variant hover:text-primary'}`}>
+          <BrainCircuit size={20} />
+          <span className="text-[10px] font-medium">脑图</span>
         </NavLink>
         <NavLink to="/page3" className={({ isActive }) => `flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive ? 'text-primary' : 'text-on-surface-variant hover:text-primary'}`}>
           <PlusCircle size={20} />

@@ -3,18 +3,31 @@ import React, { useState } from 'react';
 const API_BASE = (import.meta.env.VITE_API_BASE_URL as string) ?? '';
 import { useNavigate } from 'react-router-dom';
 import { Save, Image as ImageIcon, List, Type, Hash, Sparkles, Bot, Loader2 } from 'lucide-react';
-import { useAppContext } from '../context/AppContext';
+import { Document, useAppContext } from '../context/AppContext';
+
+interface IngestPreviewDraft {
+  title: string;
+  category: string;
+  tags: string[];
+  summary: string[];
+  content: string;
+  reviewStatus: string;
+}
 
 export default function Page3() {
   const { documents, addDocument, showToast } = useAppContext();
   const navigate = useNavigate();
+  const [rawText, setRawText] = useState('');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [category, setCategory] = useState('');
   const [tags, setTags] = useState('');
   const [summary, setSummary] = useState<string[]>([]);
+  const [isIngesting, setIsIngesting] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const MIN_CONTENT_LENGTH = 30;
+  const MIN_INGEST_LENGTH = 50;
 
   const categoryOptions = Array.from(
     new Set(
@@ -53,7 +66,45 @@ export default function Page3() {
     }
   };
 
-  const handleSave = () => {
+  const handleIngestPreview = async () => {
+    const normalizedRawText = rawText.trim();
+
+    if (normalizedRawText.length < MIN_INGEST_LENGTH) {
+      showToast('请至少输入 50 字以上内容');
+      return;
+    }
+
+    setIsIngesting(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/ingest/preview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rawText: normalizedRawText }),
+      });
+
+      const data = await response.json().catch(() => ({ error: 'AI 自动整理失败，请稍后重试' }));
+
+      if (!response.ok) {
+        throw new Error(data.error || 'AI 自动整理失败');
+      }
+
+      const draft = data as IngestPreviewDraft;
+      setTitle(draft.title ?? '');
+      setCategory(draft.category ?? '');
+      setTags(Array.isArray(draft.tags) ? draft.tags.join(', ') : '');
+      setSummary(Array.isArray(draft.summary) ? draft.summary : []);
+      setContent(draft.content ?? normalizedRawText);
+      showToast('AI 已生成知识草稿');
+    } catch (error: any) {
+      showToast(error.message || 'AI 自动整理失败，请稍后重试');
+    } finally {
+      setIsIngesting(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (isSaving) return;
+
     const normalizedTitle = title.trim();
     const normalizedContent = content.trim();
     const normalizedCategory = category.trim();
@@ -74,7 +125,7 @@ export default function Page3() {
       return;
     }
 
-    const newDoc = {
+    const newDoc: Document = {
       id: Date.now().toString(),
       title: normalizedTitle,
       content: normalizedContent,
@@ -85,9 +136,16 @@ export default function Page3() {
       reviewStatus: 'learning' as const
     };
 
-    addDocument(newDoc);
-    showToast('保存成功');
-    navigate('/page2');
+    setIsSaving(true);
+    try {
+      const savedDoc = await addDocument(newDoc);
+      showToast('保存成功');
+      navigate(`/page1?id=${savedDoc.id}`);
+    } catch (error: any) {
+      showToast(error.message || '保存失败，请稍后重试');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -121,17 +179,51 @@ export default function Page3() {
           <span className="text-xs text-outline">已保存</span>
           <button 
             onClick={handleSave}
-            disabled={!title.trim() || !category.trim() || content.trim().length < MIN_CONTENT_LENGTH}
+            disabled={isSaving || !title.trim() || !category.trim() || content.trim().length < MIN_CONTENT_LENGTH}
             className="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Save size={16} />
-            发布
+            {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            {isSaving ? '保存中...' : '发布'}
           </button>
         </div>
       </div>
 
       {/* Editor Content */}
       <div className="flex-1 overflow-y-auto px-10 py-12 max-w-4xl mx-auto w-full scrollbar-hide">
+        <section className="mb-10 rounded-2xl border border-primary/10 bg-surface-container-low p-5 md:p-6">
+          <div className="mb-4 flex items-start justify-between gap-4">
+            <div>
+              <div className="mb-2 flex items-center gap-2 text-primary">
+                <Sparkles size={18} />
+                <h2 className="text-lg font-headline font-bold text-on-surface">AI 自动整理</h2>
+              </div>
+              <p className="text-sm leading-relaxed text-on-surface-variant">
+                粘贴文章、笔记、聊天记录或学习材料，AI 会帮你生成标题、分类、标签和摘要。
+              </p>
+            </div>
+            <span className="shrink-0 rounded-full bg-surface-container-high px-2.5 py-1 text-xs text-outline">
+              {rawText.trim().length} 字
+            </span>
+          </div>
+          <textarea
+            value={rawText}
+            onChange={(e) => setRawText(e.target.value)}
+            placeholder="在这里粘贴需要整理的原始内容..."
+            className="min-h-36 w-full resize-y rounded-xl border border-outline-variant/20 bg-surface-container-lowest px-4 py-3 text-sm leading-relaxed text-on-surface-variant outline-none transition focus:border-primary/40 focus:ring-2 focus:ring-primary/10"
+          />
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs text-outline">AI 只生成草稿，不会直接保存入库。</p>
+            <button
+              onClick={handleIngestPreview}
+              disabled={isIngesting}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-on-primary transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isIngesting ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+              {isIngesting ? 'AI 正在整理...' : 'AI 整理为知识草稿'}
+            </button>
+          </div>
+        </section>
+
         <input 
           type="text" 
           value={title}

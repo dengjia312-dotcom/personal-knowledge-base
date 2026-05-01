@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL as string) ?? '';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Sparkles, Bot, PenLine, Loader2, Library, BrainCircuit, ArrowRight, ChevronDown, ChevronUp, CheckCircle2, Clock, Link2, Info } from 'lucide-react';
+import { Sparkles, Bot, PenLine, Loader2, Library, BrainCircuit, ArrowRight, ChevronDown, ChevronUp, CheckCircle2, Clock, Link2, Info, FileText } from 'lucide-react';
 import { useAppContext, Document } from '../context/AppContext';
 
 export default function Page1() {
@@ -65,6 +65,84 @@ export default function Page1() {
     const diffDays = (Date.now() - createdTime) / (1000 * 60 * 60 * 24);
     return diffDays <= 7;
   }).length;
+  const recentDocuments = useMemo(() => {
+    return documents
+      .map((item, index) => ({ item, index }))
+      .sort((a, b) => {
+        const aTime = new Date(a.item.createdAt).getTime();
+        const bTime = new Date(b.item.createdAt).getTime();
+        const normalizedATime = Number.isNaN(aTime) ? 0 : aTime;
+        const normalizedBTime = Number.isNaN(bTime) ? 0 : bTime;
+        return normalizedBTime - normalizedATime || a.index - b.index;
+      })
+      .slice(0, 5)
+      .map(({ item }) => item);
+  }, [documents]);
+
+  const recentDocumentsSection = (
+    <section className="mb-8 rounded-2xl border border-outline-variant/20 bg-surface-container-lowest p-4 md:p-5 shadow-sm">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-headline font-bold text-on-surface">最近新增知识</h2>
+          <p className="mt-1 text-xs text-on-surface-variant">保存后的内容会立即出现在这里，点击可切换当前展示文档。</p>
+        </div>
+        <button
+          onClick={() => navigate('/page2')}
+          className="shrink-0 rounded-full bg-surface-container px-3 py-1.5 text-xs font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+        >
+          查看全部
+        </button>
+      </div>
+
+      {recentDocuments.length > 0 ? (
+        <div className="space-y-2">
+          {recentDocuments.map((item) => {
+            const isCurrent = item.id === doc?.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => navigate(`/page1?id=${item.id}`)}
+                className={`w-full rounded-xl border px-4 py-3 text-left transition-colors ${
+                  isCurrent
+                    ? 'border-primary/40 bg-primary/10'
+                    : 'border-outline-variant/20 bg-surface-container-low hover:border-primary/30 hover:bg-primary/5'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <FileText size={15} className={isCurrent ? 'text-primary' : 'text-outline'} />
+                      <p className="truncate text-sm font-semibold text-on-surface">{item.title}</p>
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-on-surface-variant">
+                      <span className="rounded-full bg-surface-container-high px-2 py-0.5">{item.category}</span>
+                      <span>{item.createdAt || '暂无创建时间'}</span>
+                      <span>{item.reviewStatus === 'mastered' ? '已掌握' : '学习中'}</span>
+                    </div>
+                  </div>
+                  {isCurrent && (
+                    <span className="shrink-0 rounded-full bg-primary text-on-primary px-2 py-0.5 text-[11px] font-semibold">
+                      当前
+                    </span>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="rounded-xl border border-dashed border-outline-variant/30 bg-surface-container-low px-4 py-8 text-center">
+          <p className="text-sm font-medium text-on-surface">暂无知识内容，请先新建知识</p>
+          <button
+            onClick={() => navigate('/page3')}
+            className="mt-4 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-opacity hover:opacity-90"
+          >
+            去新建
+          </button>
+        </div>
+      )}
+    </section>
+  );
 
   const handleGenerateSummary = async () => {
     if (!doc) return;
@@ -99,7 +177,17 @@ export default function Page1() {
   };
 
   if (!doc) {
-    return <div className="p-10 text-center text-outline">加载中...</div>;
+    return (
+      <div className="flex-1 overflow-y-auto px-4 md:px-10 py-6 md:py-10 max-w-5xl mx-auto w-full scrollbar-hide">
+        <section className="mb-6 md:mb-8 rounded-2xl border border-outline-variant/20 bg-surface-container-lowest p-4 md:p-6 text-center shadow-sm">
+          <h1 className="text-xl md:text-2xl font-headline font-bold text-on-surface">工作台</h1>
+          <p className="mt-2 text-sm text-on-surface-variant">
+            {documents.length === 0 ? '暂无当前知识内容。' : '正在加载当前知识内容...'}
+          </p>
+        </section>
+        {recentDocumentsSection}
+      </div>
+    );
   }
 
   const hasSummary = (doc.summary && doc.summary.length > 0 && doc.summary[0] !== 'AI 摘要将在稍后生成...') || isGeneratingSummary;
@@ -239,6 +327,8 @@ export default function Page1() {
           </div>
         </div>
       </section>
+
+      {recentDocumentsSection}
 
       {/* 当前阅读内容卡（视觉中心） */}
       <section className="mb-8 rounded-2xl overflow-hidden border border-primary/20 bg-gradient-to-br from-surface-container-lowest via-primary/5 to-primary-container/10 shadow-md">

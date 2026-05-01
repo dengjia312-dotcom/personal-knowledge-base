@@ -90,7 +90,7 @@ const defaultProfile: UserProfile = {
 
 interface AppContextType {
   documents: Document[];
-  addDocument: (doc: Document) => void;
+  addDocument: (doc: Document) => Promise<Document>;
   updateDocument: (id: string, updates: Partial<Document>) => void;
   userProfile: UserProfile;
   updateUserProfile: (profile: UserProfile) => void;
@@ -120,18 +120,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .catch(() => setUserProfile(defaultProfile));
   }, []);
 
-  const addDocument = (doc: Document) => {
-    fetch(`${API_BASE}/api/documents`, {
+  const addDocument = async (doc: Document): Promise<Document> => {
+    const response = await fetch(`${API_BASE}/api/documents`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(doc),
-    })
-      .then(r => {
-        if (!r.ok) throw new Error(`保存失败 (${r.status})`);
-        return r.json();
-      })
-      .then(() => setDocuments(prev => [doc, ...prev]))
-      .catch(err => console.error('addDocument failed:', err));
+    });
+
+    if (!response.ok) {
+      throw new Error(`保存失败 (${response.status})`);
+    }
+
+    const savedDoc = await response.json() as Document;
+    setDocuments(prev => [savedDoc, ...prev.filter(item => item.id !== savedDoc.id)]);
+    return savedDoc;
   };
 
   const updateDocument = (id: string, updates: Partial<Document>) => {

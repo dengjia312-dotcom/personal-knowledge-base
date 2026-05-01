@@ -9,6 +9,16 @@ import Page5 from './pages/Page5';
 import { AppProvider } from './context/AppContext';
 import { useTheme } from './hooks/useTheme';
 
+const BrainView = React.lazy(() => import('./pages/BrainView'));
+
+function BrainViewLoading() {
+  return (
+    <div className="flex h-[calc(100vh-4rem)] min-h-[680px] items-center justify-center bg-[#070b14] px-6 text-center text-sm font-medium text-cyan-100">
+      正在加载知识脑图...
+    </div>
+  );
+}
+
 function ThemedApp() {
   useTheme();
   return (
@@ -21,6 +31,14 @@ function ThemedApp() {
           <Route path="page3" element={<Page3 />} />
           <Route path="page4" element={<Page4 />} />
           <Route path="page5" element={<Page5 />} />
+          <Route
+            path="brain"
+            element={
+              <React.Suspense fallback={<BrainViewLoading />}>
+                <BrainView />
+              </React.Suspense>
+            }
+          />
         </Route>
       </Routes>
     </BrowserRouter>
