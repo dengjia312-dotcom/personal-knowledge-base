@@ -5,6 +5,7 @@ import { BrainNode, BrainRelatedNode, getCategoryColor, isReviewDue } from '../u
 interface BrainNodePanelProps {
   node: BrainNode | null;
   relatedNodes: BrainRelatedNode[];
+  coreNodeId?: string | null;
   onOpenDetail: (nodeId: string) => void;
   onSelectNode: (nodeId: string) => void;
 }
@@ -27,6 +28,7 @@ function getStatusLabel(node: BrainNode): string {
 export default function BrainNodePanel({
   node,
   relatedNodes,
+  coreNodeId,
   onOpenDetail,
   onSelectNode,
 }: BrainNodePanelProps) {
@@ -48,6 +50,7 @@ export default function BrainNodePanel({
 
   const categoryColor = getCategoryColor(node.category);
   const reviewDue = isReviewDue(node);
+  const isCoreNode = Boolean(coreNodeId && node.id === coreNodeId && node.connectionCount > 0);
 
   return (
     <aside className="h-full min-h-0 overflow-y-auto border-l border-white/10 bg-[#101421] px-5 py-5 text-slate-200 scrollbar-hide">
@@ -83,6 +86,21 @@ export default function BrainNodePanel({
           <p className="mt-1 text-sm font-semibold text-slate-100">{node.isolated ? '孤立节点' : '已连接'}</p>
         </div>
       </div>
+
+      {(node.isolated || isCoreNode) && (
+        <div className="mt-4 space-y-2">
+          {node.isolated && (
+            <p className="rounded-lg border border-amber-300/20 bg-amber-300/10 p-3 text-sm leading-6 text-amber-100">
+              这个知识暂时还没有进入知识网络，建议补充标签、分类或关联主题。
+            </p>
+          )}
+          {isCoreNode && (
+            <p className="rounded-lg border border-cyan-300/20 bg-cyan-300/10 p-3 text-sm leading-6 text-cyan-100">
+              这是一个知识枢纽节点，连接多个相关知识，适合作为复习或扩展入口。
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="mt-5 space-y-4">
         <section>
@@ -181,4 +199,3 @@ export default function BrainNodePanel({
     </aside>
   );
 }
-

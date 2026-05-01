@@ -43,6 +43,12 @@ export interface BrainGraphStats {
   linkCount: number;
   isolatedCount: number;
   reviewDueCount: number;
+  largestCategory: {
+    category: string;
+    count: number;
+    ratio: number;
+  } | null;
+  topConnectedNode: BrainNode | null;
 }
 
 export interface BrainGraphFilters {
@@ -50,6 +56,12 @@ export interface BrainGraphFilters {
   category?: string;
   isolatedOnly?: boolean;
   reviewOnly?: boolean;
+}
+
+export interface BrainGraphInsight {
+  id: string;
+  message: string;
+  tone: 'warning' | 'info' | 'success';
 }
 
 const CATEGORY_COLORS = [
@@ -184,12 +196,98 @@ export function filterBrainGraph(graphData: BrainGraphData, filters: BrainGraphF
 }
 
 export function getBrainGraphStats(graphData: BrainGraphData): BrainGraphStats {
+  const categoryCount = new Map<string, number>();
+  for (const node of graphData.nodes) {
+    categoryCount.set(node.category, (categoryCount.get(node.category) ?? 0) + 1);
+  }
+
+  const largestCategoryEntry = Array.from(categoryCount.entries()).sort(
+    (a, b) => b[1] - a[1] || a[0].localeCompare(b[0])
+  )[0];
+
+  const topConnectedNode = getTopConnectedNodes(graphData, 1)[0] ?? null;
+
   return {
     nodeCount: graphData.nodes.length,
     linkCount: graphData.links.length,
     isolatedCount: graphData.nodes.filter((node) => node.isolated).length,
     reviewDueCount: graphData.nodes.filter((node) => node.reviewStatus !== 'mastered').length,
+    largestCategory: largestCategoryEntry
+      ? {
+          category: largestCategoryEntry[0],
+          count: largestCategoryEntry[1],
+          ratio: graphData.nodes.length > 0 ? largestCategoryEntry[1] / graphData.nodes.length : 0,
+        }
+      : null,
+    topConnectedNode,
   };
+}
+
+export function getTopConnectedNodes(graphData: BrainGraphData, limit = 5): BrainNode[] {
+  return [...graphData.nodes]
+    .filter((node) => node.connectionCount > 0)
+    .sort(
+      (a, b) =>
+        b.connectionCount - a.connectionCount ||
+        a.title.localeCompare(b.title) ||
+        a.id.localeCompare(b.id)
+    )
+    .slice(0, limit);
+}
+
+export function getBrainGraphInsights(graphData: BrainGraphData): BrainGraphInsight[] {
+  const stats = getBrainGraphStats(graphData);
+  const insights: BrainGraphInsight[] = [];
+
+  if (stats.isolatedCount > 0) {
+    insights.push({
+      id: 'isolated',
+      tone: 'warning',
+      message: `有 ${stats.isolatedCount} 个孤立知识，建议补充标签或关联到已有主题。`,
+    });
+  }
+
+  if (stats.reviewDueCount > 0) {
+    insights.push({
+      id: 'review',
+      tone: 'info',
+      message: `有 ${stats.reviewDueCount} 个知识待复习，建议优先处理。`,
+    });
+  }
+
+  if (stats.nodeCount > 1 && stats.linkCount < Math.max(1, Math.floor(stats.nodeCount / 2))) {
+    insights.push({
+      id: 'weak-links',
+      tone: 'warning',
+      message: '当前知识关系较弱，建议补充更稳定的标签。',
+    });
+  }
+
+  if (stats.topConnectedNode) {
+    insights.push({
+      id: 'core-node',
+      tone: 'success',
+      message: `当前核心知识节点是：${stats.topConnectedNode.title}。`,
+    });
+  }
+
+  if (stats.largestCategory && stats.largestCategory.ratio >= 0.5 && stats.nodeCount >= 4) {
+    insights.push({
+      id: 'category-focus',
+      tone: 'info',
+      message: `当前知识集中在 ${stats.largestCategory.category}，可考虑补充其他方向。`,
+    });
+  }
+
+  if (insights.length === 0 && stats.nodeCount > 0) {
+    insights.push({
+      id: 'healthy',
+      tone: 'success',
+      message: '当前知识网络结构较均衡，可以继续补充高质量标签和复习记录。',
+    });
+  }
+
+  return insights;
 }
 
 export function getBrainCategories(graphData: BrainGraphData): string[] {

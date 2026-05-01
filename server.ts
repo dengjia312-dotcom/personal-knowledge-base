@@ -1,12 +1,20 @@
 import 'dotenv/config';
 import express from "express";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI, Type } from "@google/genai";
 import path from "path";
 import { initDb } from "./db/database";
 import { getAllDocuments, createDocument, updateDocument, syncSystemDocs } from "./db/documents";
 import { getProfile, updateProfile } from "./db/profile";
 import { getInsight, upsertInsight } from "./db/insights";
+
+const MODEL_ENV_ERROR = "AI 模型环境变量未配置";
+const MODEL_CALL_ERROR = "模型接口调用失败";
+const MODEL_PARSE_ERROR = "AI 返回格式解析失败";
+
+interface ChatModelMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
 
 function cleanJsonText(value: string): string {
   const trimmed = value.trim();
@@ -23,8 +31,13 @@ function cleanJsonText(value: string): string {
 }
 
 function normalizeStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value
+  const items = Array.isArray(value)
+    ? value
+    : typeof value === 'string'
+      ? value.split(/[,，、;\n]/)
+      : [];
+
+  return items
     .map((item) => String(item ?? '').replace(/^#+/, '').trim())
     .filter(Boolean);
 }
@@ -32,6 +45,80 @@ function normalizeStringArray(value: unknown): string[] {
 function readModelEnv(name: string): string {
   const value = process.env[name];
   return value ? value.replace(/^"|"$/g, '').trim() : '';
+}
+
+function normalizeTags(value: unknown): string[] {
+  const genericTags = new Set(["教程", "知识", "内容", "总结"]);
+  const seen = new Set<string>();
+
+  return normalizeStringArray(value)
+    .map((tag) => tag.replace(/\s+/g, ''))
+    .filter((tag) => tag && !genericTags.has(tag))
+    .filter((tag) => {
+      const key = tag.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 6);
+}
+
+function normalizeSummary(value: unknown): string[] {
+  return normalizeStringArray(value).slice(0, 4);
+}
+
+function parseModelJson(text: string): unknown {
+  try {
+    return JSON.parse(cleanJsonText(text));
+  } catch {
+    throw new Error(MODEL_PARSE_ERROR);
+  }
+}
+
+function getApiErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    if ([MODEL_ENV_ERROR, MODEL_CALL_ERROR, MODEL_PARSE_ERROR].includes(error.message)) {
+      return error.message;
+    }
+  }
+  return MODEL_CALL_ERROR;
+}
+
+async function callChatModel(messages: ChatModelMessage[], temperature = 0.3): Promise<string> {
+  const modelApiKey = readModelEnv('MODEL_API_KEY');
+  const modelBaseUrl = readModelEnv('MODEL_BASE_URL');
+  const modelName = readModelEnv('MODEL_NAME');
+
+  if (!modelApiKey || !modelBaseUrl || !modelName) {
+    throw new Error(MODEL_ENV_ERROR);
+  }
+
+  const modelResponse = await fetch(`${modelBaseUrl.replace(/\/+$/, '')}/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${modelApiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: modelName,
+      messages,
+      temperature,
+    }),
+  });
+
+  if (!modelResponse.ok) {
+    throw new Error(MODEL_CALL_ERROR);
+  }
+
+  const completion = await modelResponse.json().catch(() => {
+    throw new Error(MODEL_CALL_ERROR);
+  });
+  const content = completion?.choices?.[0]?.message?.content;
+  if (!content || typeof content !== 'string') {
+    throw new Error(MODEL_PARSE_ERROR);
+  }
+
+  return content;
 }
 
 async function startServer() {
@@ -125,74 +212,53 @@ async function startServer() {
         return res.status(400).json({ error: "请至少输入 50 字以上内容" });
       }
 
-      const modelApiKey = readModelEnv('MODEL_API_KEY');
-      const modelBaseUrl = readModelEnv('MODEL_BASE_URL');
-      const modelName = readModelEnv('MODEL_NAME');
-
-      if (!modelApiKey || !modelBaseUrl || !modelName) {
-        return res.status(500).json({ error: "AI 模型环境变量未配置" });
-      }
-
       const userPrompt = [
-        "请把下面的原始内容整理成 LumenKB 知识草稿。",
-        "只返回 JSON 对象，不要 Markdown，不要代码块，不要解释。",
-        "JSON 格式必须是：",
+        "请把下面的原始内容整理成一张适合长期沉淀、复习和知识图谱关联的 LumenKB 知识卡片。",
+        "只返回 JSON 对象，不要 Markdown 代码块，不要解释，不要在 JSON 外输出任何文字。",
+        "这不是简单摘要任务。请先理解原文核心主题，再重组为可复用的知识卡片。",
+        "JSON 格式必须严格为：",
         `{
   "title": "string",
-  "category": "string",
+  "category": "工作|技术|认知科学|学习方法|阅读|设计|未分类",
   "tags": ["string"],
   "summary": ["string"],
   "content": "string",
   "reviewStatus": "learning"
 }`,
-        "分类必须优先从这些里面选：工作、技术、认知科学、学习方法、阅读、设计、未分类。",
-        "标签生成 3 到 6 个，简短，不带 #，不要太泛。",
-        "摘要生成 2 到 4 条，每条一句话，适合复习。",
-        "content 是清洗后的正文草稿，保留用户原始内容核心信息，不要大幅编造。",
-        "reviewStatus 固定为 learning。",
+        "title：不要直接照抄原文标题，要生成适合作为知识卡片标题的表达，并明确指出这条知识的核心主题。",
+        "title 示例：原文标题“小米 MiMo Token Plan 配置教程”，更好的标题是“MiMo Token Plan 的配置方式与注意点”。",
+        "category：必须且只能从这些分类中选一个：工作、技术、认知科学、学习方法、阅读、设计、未分类。",
+        "tags：生成 3 到 6 个，短、准确、适合知识图谱复用，不带 #。",
+        "tags：不要使用“教程”“知识”“内容”“总结”这类过泛标签。",
+        "tags：优先包含技术对象（如 MCP、MiMo、OpenClaw、RAG）、应用场景（如 Agent、知识库、模型接入）和关键概念（如 API 接入、权限控制、工作流）。",
+        "tags：避免同义重复；例如“小米”和“MiMo”表达同一对象时，优先保留更准确的“MiMo”。",
+        "summary：生成 2 到 4 条，每条一句话，像复习卡片要点，而不是复制原文；每条只聚焦一个核心信息，不要空泛。",
+        "content：必须是结构化 Markdown 字符串，但不要使用 Markdown 代码块。",
+        "content 必须包含这些二级标题：## 核心概念、## 关键内容、## 注意事项、## 可复习问题。",
+        "## 核心概念：用 1-2 段解释这条知识到底讲什么。",
+        "## 关键内容：用要点列出原文里的主要信息。",
+        "## 注意事项：列出使用、配置、理解时容易出错的点；如果原文没有相关信息，写“原文未提供明显注意事项。”",
+        "## 可复习问题：生成 2-3 个基于原文的问题，不要编造。",
+        "保留原始内容的核心事实，可以清洗和重组表达，但不要大幅编造原文没有提供的信息。",
+        "如果原文信息不足，要明确写“原文未提供”。",
+        "reviewStatus：固定返回 learning。",
         sourceTitle ? `来源标题：${sourceTitle}` : "",
         sourceUrl ? `来源链接：${sourceUrl}` : "",
         `原始内容：\n${rawText.trim()}`,
       ].filter(Boolean).join("\n\n");
 
-      const modelResponse = await fetch(`${modelBaseUrl.replace(/\/+$/, '')}/chat/completions`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${modelApiKey}`,
-          "Content-Type": "application/json",
+      const jsonStr = await callChatModel([
+        {
+          role: "system",
+          content: "你是 LumenKB 的知识整理助手。你擅长把原始资料整理成长期可复习、可关联的结构化知识卡片。你只能返回严格 JSON，不要返回 Markdown 代码块，不要解释。",
         },
-        body: JSON.stringify({
-          model: modelName,
-          messages: [
-            {
-              role: "system",
-              content: "你是 LumenKB 的知识整理助手。你只能返回严格 JSON，不要返回 Markdown，不要解释。",
-            },
-            {
-              role: "user",
-              content: userPrompt,
-            },
-          ],
-          temperature: 0.3,
-        }),
-      });
+        {
+          role: "user",
+          content: userPrompt,
+        },
+      ]);
 
-      if (!modelResponse.ok) {
-        return res.status(500).json({ error: "模型接口调用失败" });
-      }
-
-      const completion = await modelResponse.json();
-      const jsonStr = completion?.choices?.[0]?.message?.content;
-      if (!jsonStr || typeof jsonStr !== 'string') {
-        return res.status(500).json({ error: "AI 返回格式解析失败" });
-      }
-
-      let parsed: any;
-      try {
-        parsed = JSON.parse(cleanJsonText(jsonStr));
-      } catch {
-        return res.status(500).json({ error: "AI 返回格式解析失败" });
-      }
+      const parsed = parseModelJson(jsonStr) as any;
 
       const allowedCategories = new Set(["工作", "技术", "认知科学", "学习方法", "阅读", "设计", "未分类"]);
       const category = String(parsed.category ?? '').trim();
@@ -200,14 +266,14 @@ async function startServer() {
       res.json({
         title: String(parsed.title ?? '').trim() || "未命名知识",
         category: allowedCategories.has(category) ? category : "未分类",
-        tags: normalizeStringArray(parsed.tags).slice(0, 6),
-        summary: normalizeStringArray(parsed.summary).slice(0, 4),
+        tags: normalizeTags(parsed.tags),
+        summary: normalizeSummary(parsed.summary),
         content: String(parsed.content ?? rawText).trim(),
         reviewStatus: "learning",
       });
     } catch (error: any) {
       console.error("AI 自动整理失败:", error);
-      res.status(500).json({ error: "模型接口调用失败" });
+      res.status(500).json({ error: getApiErrorMessage(error) });
     }
   });
 
@@ -219,30 +285,43 @@ async function startServer() {
         return res.status(400).json({ error: "请先输入正文内容" });
       }
 
-      let apiKey = process.env.GOOGLE_API_KEY;
-      if (apiKey) apiKey = apiKey.replace(/^"|"$/g, '').trim();
-      if (!apiKey) return res.status(500).json({ error: "服务器未配置 GOOGLE_API_KEY" });
+      const userPrompt = [
+        "请为以下文档正文生成适合 LumenKB 复习使用的 AI 摘要。",
+        "只返回严格 JSON，不要 Markdown，不要解释，不要在 JSON 外输出任何文字。",
+        "优先返回格式：",
+        `{
+  "summary": ["string", "string", "string"]
+}`,
+        "summary 生成 2 到 4 条。",
+        "每条一句话，适合复习。",
+        "不要复制原文，要提炼核心要点。",
+        `正文：\n${content.trim()}`,
+      ].join("\n\n");
 
-      const ai = new GoogleGenAI({ apiKey });
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `请为以下正文生成3条简洁的摘要（每条不超过30个字）。\n\n正文：\n${content}`,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING },
-            description: "3条简洁的摘要",
-          },
+      const jsonStr = await callChatModel([
+        {
+          role: "system",
+          content: "你是 LumenKB 的复习摘要助手。你只能返回严格 JSON，不要返回 Markdown，不要解释。",
         },
-      });
+        {
+          role: "user",
+          content: userPrompt,
+        },
+      ]);
 
-      const jsonStr = response.text?.trim();
-      if (!jsonStr) throw new Error("API 返回结果为空");
-      res.json({ summaries: JSON.parse(jsonStr) });
+      const parsed = parseModelJson(jsonStr) as any;
+      const summaries = Array.isArray(parsed)
+        ? normalizeSummary(parsed)
+        : normalizeSummary(parsed?.summary ?? parsed?.summaries);
+
+      if (summaries.length === 0) {
+        return res.status(500).json({ error: MODEL_PARSE_ERROR });
+      }
+
+      res.json({ summary: summaries, summaries });
     } catch (error: any) {
       console.error("AI 摘要生成失败:", error);
-      res.status(500).json({ error: error.message || "生成摘要时发生错误" });
+      res.status(500).json({ error: getApiErrorMessage(error) });
     }
   });
 

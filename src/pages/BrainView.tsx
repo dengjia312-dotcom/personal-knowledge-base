@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { BrainCircuit, CircleDot, Filter, Network, Search, Sparkles } from 'lucide-react';
+import { BrainCircuit, CircleDot, Filter, Network, Search, Sparkles, Trophy } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BrainGraph from '../components/BrainGraph';
 import BrainNodePanel from '../components/BrainNodePanel';
@@ -8,11 +8,19 @@ import {
   buildBrainGraph,
   filterBrainGraph,
   getBrainCategories,
+  getBrainGraphInsights,
   getBrainGraphStats,
   getBrainNodeById,
   getCategoryColor,
   getRelatedNodes,
+  getTopConnectedNodes,
 } from '../utils/brainGraph';
+
+function getInsightClass(tone: 'warning' | 'info' | 'success'): string {
+  if (tone === 'warning') return 'border-amber-300/20 bg-amber-300/10 text-amber-100';
+  if (tone === 'success') return 'border-emerald-300/20 bg-emerald-300/10 text-emerald-100';
+  return 'border-cyan-300/20 bg-cyan-300/10 text-cyan-100';
+}
 
 export default function BrainView() {
   const { documents } = useAppContext();
@@ -26,6 +34,9 @@ export default function BrainView() {
 
   const fullGraphData = useMemo(() => buildBrainGraph(documents), [documents]);
   const categories = useMemo(() => getBrainCategories(fullGraphData), [fullGraphData]);
+  const overviewStats = useMemo(() => getBrainGraphStats(fullGraphData), [fullGraphData]);
+  const graphInsights = useMemo(() => getBrainGraphInsights(fullGraphData), [fullGraphData]);
+  const topConnectedNodes = useMemo(() => getTopConnectedNodes(fullGraphData, 5), [fullGraphData]);
   const filteredGraphData = useMemo(
     () =>
       filterBrainGraph(fullGraphData, {
@@ -36,7 +47,7 @@ export default function BrainView() {
       }),
     [fullGraphData, query, selectedCategory, isolatedOnly, reviewOnly]
   );
-  const stats = useMemo(() => getBrainGraphStats(filteredGraphData), [filteredGraphData]);
+  const filteredStats = useMemo(() => getBrainGraphStats(filteredGraphData), [filteredGraphData]);
   const selectedNode = useMemo(
     () => getBrainNodeById(fullGraphData, selectedNodeId),
     [fullGraphData, selectedNodeId]
@@ -66,6 +77,14 @@ export default function BrainView() {
 
   const hasDocuments = documents.length > 0;
   const hasVisibleNodes = filteredGraphData.nodes.length > 0;
+
+  const handleSelectRankedNode = (nodeId: string) => {
+    setQuery('');
+    setSelectedCategory('');
+    setIsolatedOnly(false);
+    setReviewOnly(false);
+    setSelectedNodeId(nodeId);
+  };
 
   return (
     <div className="h-[calc(100vh-4rem)] min-h-[680px] overflow-hidden bg-[#070b14] text-slate-100">
@@ -138,26 +157,102 @@ export default function BrainView() {
             <section className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
               <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
                 <Network size={15} className="text-cyan-200" />
-                当前视图统计
+                认知结构总览
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="rounded-md bg-black/20 p-2.5">
                   <p className="text-[11px] text-slate-500">知识节点数</p>
-                  <p className="text-xl font-bold text-white">{stats.nodeCount}</p>
+                  <p className="text-xl font-bold text-white">{overviewStats.nodeCount}</p>
                 </div>
                 <div className="rounded-md bg-black/20 p-2.5">
                   <p className="text-[11px] text-slate-500">关系数</p>
-                  <p className="text-xl font-bold text-white">{stats.linkCount}</p>
+                  <p className="text-xl font-bold text-white">{overviewStats.linkCount}</p>
                 </div>
                 <div className="rounded-md bg-black/20 p-2.5">
                   <p className="text-[11px] text-slate-500">孤立节点数</p>
-                  <p className="text-xl font-bold text-white">{stats.isolatedCount}</p>
+                  <p className="text-xl font-bold text-white">{overviewStats.isolatedCount}</p>
                 </div>
                 <div className="rounded-md bg-black/20 p-2.5">
                   <p className="text-[11px] text-slate-500">待复习节点数</p>
-                  <p className="text-xl font-bold text-cyan-200">{stats.reviewDueCount}</p>
+                  <p className="text-xl font-bold text-cyan-200">{overviewStats.reviewDueCount}</p>
+                </div>
+                <div className="rounded-md bg-black/20 p-2.5">
+                  <p className="text-[11px] text-slate-500">最大分类/主题</p>
+                  <p className="mt-1 truncate text-sm font-bold text-white">
+                    {overviewStats.largestCategory
+                      ? `${overviewStats.largestCategory.category} · ${overviewStats.largestCategory.count}`
+                      : '暂无'}
+                  </p>
+                </div>
+                <div className="rounded-md bg-black/20 p-2.5">
+                  <p className="text-[11px] text-slate-500">最高连接节点</p>
+                  <p className="mt-1 truncate text-sm font-bold text-white">
+                    {overviewStats.topConnectedNode
+                      ? `${overviewStats.topConnectedNode.title} · ${overviewStats.topConnectedNode.connectionCount}`
+                      : '暂无'}
+                  </p>
                 </div>
               </div>
+              <p className="mt-3 text-[11px] leading-5 text-slate-500">
+                当前筛选视图：{filteredStats.nodeCount} 个节点 / {filteredStats.linkCount} 条关系
+              </p>
+            </section>
+
+            <section className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
+              <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
+                <Sparkles size={15} className="text-cyan-200" />
+                整理建议
+              </div>
+              <div className="space-y-2">
+                {graphInsights.map((insight) => (
+                  <p
+                    key={insight.id}
+                    className={`rounded-md border px-3 py-2 text-xs leading-5 ${getInsightClass(insight.tone)}`}
+                  >
+                    {insight.message}
+                  </p>
+                ))}
+              </div>
+            </section>
+
+            <section className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
+              <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
+                <Trophy size={15} className="text-cyan-200" />
+                高关联知识排行
+              </div>
+              {topConnectedNodes.length > 0 ? (
+                <div className="space-y-2">
+                  {topConnectedNodes.map((node, index) => {
+                    const active = node.id === selectedNodeId;
+                    return (
+                      <button
+                        key={node.id}
+                        type="button"
+                        onClick={() => handleSelectRankedNode(node.id)}
+                        className={`w-full rounded-md border px-3 py-2 text-left transition ${
+                          active
+                            ? 'border-cyan-300/50 bg-cyan-300/10'
+                            : 'border-white/10 bg-black/15 hover:border-cyan-300/30 hover:bg-cyan-300/10'
+                        }`}
+                      >
+                        <div className="flex items-start gap-2">
+                          <span className="mt-0.5 text-xs font-bold text-cyan-200">{index + 1}</span>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold text-slate-100">{node.title}</p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              {node.category} · {node.connectionCount} 个连接
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="rounded-md border border-white/10 bg-black/15 px-3 py-2 text-xs leading-5 text-slate-500">
+                  暂无高关联节点，先为知识补充更稳定的标签。
+                </p>
+              )}
             </section>
 
             <section className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
@@ -232,6 +327,7 @@ export default function BrainView() {
         <BrainNodePanel
           node={selectedNode}
           relatedNodes={relatedNodes}
+          coreNodeId={overviewStats.topConnectedNode?.id ?? null}
           onOpenDetail={(nodeId) => navigate(`/page1?id=${nodeId}`)}
           onSelectNode={setSelectedNodeId}
         />
@@ -239,4 +335,3 @@ export default function BrainView() {
     </div>
   );
 }
-
